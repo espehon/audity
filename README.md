@@ -1,2 +1,2 @@
 # audity
-Audit, inspect, and servey data from the terminal.
+Audit, inspect, and survey data from the terminal.

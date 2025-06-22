@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "audity"
+version = "0.0.1"
+authors = [
+	{ name="espehon", email="espehon@gmail.com" },
+]
+description = "Audit, inspect, and survey data from the terminal."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+	"colorama >= 0.4.6",
+	"pandas >= 2.3.0",
+	"numpy >= 2.2.6",
+	"seaborn >= 0.12.2",
+	"matplotlib >= 3.7.1",
+	"halo >= 0.0.31",
+	"questionary >= 2.1.0",
+	"openpyxl >= 3.1.5",
+]
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"Development Status :: 3 - Alpha",
+	"Environment :: Console",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: OS Independent",
+	"Topic :: Utilities",
+	"Topic :: Scientific/Engineering :: Information Analysis"
+]
+
+[project.scripts]
+audity = "audity.audity:main"
+
+[project.urls]
+"Homepage" = "https://github.com/espehon/audity"
+"Bug Tracker" = "https://github.com/espehon/audity/issues"

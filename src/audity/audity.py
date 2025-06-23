@@ -77,6 +77,17 @@ def browse_files(start_path: str=".") -> Union[str, None]:
             return os.path.join(current_path, selected)
 
 
+def print_sample_with_dtypes(df: pd.DataFrame, n: int = 5):
+    # Create a DataFrame with one row: the dtypes as strings
+    dtypes_row = pd.DataFrame([df.dtypes.astype(str).values], columns=df.columns)
+    dtypes_row.index = ['index/type']
+    # Get the sample
+    sample = df.sample(n)
+    # Concatenate dtypes row and sample
+    preview = pd.concat([dtypes_row, sample])
+    print(preview)
+
+
 def load_dataset(file_path: str) -> pd.DataFrame:
     try:
         if not os.path.isfile(file_path):
@@ -85,18 +96,20 @@ def load_dataset(file_path: str) -> pd.DataFrame:
         file_extension = os.path.splitext(file_path)[1].lower()
     
         if file_extension in ['.csv']:
-            return pd.read_csv(file_path)
+            raw_data = pd.read_csv(file_path)
         elif file_extension in ['.xlsx', '.xls']:
-            return pd.read_excel(file_path)
+            raw_data = pd.read_excel(file_path)
         elif file_extension in ['.json']:
-            return pd.read_json(file_path)
+            raw_data = pd.read_json(file_path)
         elif file_extension in ['.parquet']:
-            return pd.read_parquet(file_path)
+            raw_data = pd.read_parquet(file_path)
         else:
             raise ValueError(f"Unsupported file format: {file_extension}")
     except Exception as e:
         print(f"Error loading dataset\n{e}")
         sys.exit(1)
+    
+    print_sample_with_dtypes(raw_data, n=5)
 
 
 
@@ -107,5 +120,5 @@ def main(argv=None):
     if data_file is None:
         print("No file selected. Exiting.")
         return 1
-    raw_data = load_dataset(data_file)
-    print(raw_data.dtypes)
+    load_dataset(data_file)
+    print("End of file...")

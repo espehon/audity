@@ -85,6 +85,7 @@ def print_sample_with_dtypes(df: pd.DataFrame, n: int = 5):
     sample = df.sample(n)
     # Concatenate dtypes row and sample
     preview = pd.concat([dtypes_row, sample])
+    print()
     print(preview)
 
 
@@ -94,22 +95,159 @@ def load_dataset(file_path: str) -> pd.DataFrame:
             raise FileNotFoundError(f"File not found: {file_path}")
 
         file_extension = os.path.splitext(file_path)[1].lower()
-    
+
         if file_extension in ['.csv']:
-            raw_data = pd.read_csv(file_path)
+            df = pd.read_csv(file_path)
         elif file_extension in ['.xlsx', '.xls']:
-            raw_data = pd.read_excel(file_path)
+            df = pd.read_excel(file_path)
         elif file_extension in ['.json']:
-            raw_data = pd.read_json(file_path)
+            df = pd.read_json(file_path)
         elif file_extension in ['.parquet']:
-            raw_data = pd.read_parquet(file_path)
+            df = pd.read_parquet(file_path)
         else:
             raise ValueError(f"Unsupported file format: {file_extension}")
     except Exception as e:
-        print(f"Error loading dataset\n{e}")
+        print(f"{Back.LIGHTYELLOW_EX}{Fore.BLACK}Error loading dataset{Style.RESET_ALL}\n{Fore.LIGHTYELLOW_EX}{e}")
         sys.exit(1)
+    return df
+
+
+def header_rename(df: pd.DataFrame, old_header: str) -> pd.DataFrame:
+    new_header = questionary.text(
+            f"Enter new header name for '{old_header}':",
+            default=old_header
+        ).ask()
+    if new_header is None or new_header.strip() == "":
+        print(f"{Fore.LIGHTYELLOW_EX}Header name cannot be empty. Operation cancelled.")
+        return df
+    if new_header == old_header:
+        print(f"{Fore.LIGHTYELLOW_EX}New header name is the same as the old one. No changes made.")
+        return df
+    if new_header in df.columns:
+        print(f"{Fore.LIGHTYELLOW_EX}Header '{new_header}' already exists. Operation cancelled.")
+        return df
+    df.rename(columns={old_header: new_header}, inplace=True)
+    print(f"{Fore.GREEN}Header '{old_header}' renamed to '{new_header}'.")
+    return df
+
+
+def header_type_change(df: pd.DataFrame, header_name: str) -> pd.DataFrame:
+    new_type = questionary.select(
+            f"Select new type for '{header_name}':",
+            choices=[
+                "int64",
+                "float64",
+                "object",
+                "datetime64[ns]",
+                "category",
+                "[Cancel]"
+            ]
+        ).ask()
+    if new_type is None or new_type == "[Cancel]":
+        print(f"Header type change cancelled.")
+        return df
+    if new_type not in ['int64', 'float64', 'object', 'datetime64[ns]', 'category']:
+        print(f"{Fore.LIGHTYELLOW_EX}Unsupported type '{new_type}'. Operation cancelled.")
+        return df
+    try:
+        if new_type == 'int64':
+            df[header_name] = pd.to_numeric(df[header_name], errors='coerce').astype('Int64')
+        elif new_type == 'float64':
+            df[header_name] = df[header_name].astype('float64')
+        elif new_type == 'object':
+            df[header_name] = df[header_name].astype('object')
+        elif new_type == 'datetime64[ns]':
+            df[header_name] = pd.to_datetime(df[header_name], errors='coerce')
+        elif new_type == 'category':
+            df[header_name] = df[header_name].astype('category')
+        print(f"{Fore.GREEN}Header '{header_name}' type changed to '{new_type}'.")
+    except Exception as e:
+        print(f"{Back.LIGHTYELLOW_EX}{Fore.BLACK}Error changing header type:{Style.RESET_ALL}\n{Fore.LIGHTYELLOW_EX}{e}")
+    return df
+
+
+def header_delete(df: pd.DataFrame, header_name: str) -> pd.DataFrame:
+    confirm = questionary.confirm(
+        f"Are you sure you want to delete the header '{header_name}'?",
+        default=False
+    ).ask()
+    if not confirm:
+        print("Header deletion cancelled.")
+        return df
+    if header_name not in df.columns:
+        print(f"Header '{header_name}' does not exist. No changes made.")
+        return df
+    df.drop(columns=[header_name], inplace=True)
+    print(f"{Fore.GREEN}Header '{header_name}' deleted.")
+    return df
+
+
+def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
+    def exit_prompt():
+        answer = questionary.confirm(
+                "Do you want to exit the header editing mode?",
+                default=True
+            ).ask()
+        return answer
     
-    print_sample_with_dtypes(raw_data, n=5)
+    print_sample_with_dtypes(df, n=10)
+    
+    edit_mode = True
+    while edit_mode:
+        user = questionary.confirm(
+        "Do you want to edit the dataset headers?",
+        default=True
+        ).ask()
+        if not user:
+            print("Exiting header editing mode.")
+            edit_mode = False
+            continue
+        
+        # Header selection
+        header_types = df.dtypes.items()
+        selected_header = questionary.select(
+            "Select header to edit",
+            choices=[f"{name} ({dtype})" for name, dtype in header_types] + ["[Finish]"]
+        ).ask()
+        if selected_header is None or selected_header == "[Finish]":
+            if exit_prompt():
+                edit_mode = False
+            continue
+        header_name = selected_header.split(" (")[0]
+
+        # Action selection 
+        user = questionary.select(
+            f"What do you want to do with {selected_header}?",
+            choices=[
+                "Edit header name",
+                "Change header type",
+                "Delete header",
+                "[Cancel]"
+            ]
+        ).ask()
+        if user is None or user == "[Cancel]":
+            if exit_prompt():
+                edit_mode = False
+            continue
+        
+        if user == "Edit header name":
+            df = header_rename(df, header_name)
+        elif user == "Change header type":
+            df = header_type_change(df, header_name)
+        elif user == "Delete header":
+            df = header_delete(df, header_name)
+        else:
+            print(f"{Fore.LIGHTYELLOW_EX}Unknown action. Please try again.")
+            continue
+        print_sample_with_dtypes(df, n=5)
+    print(f"\n {Fore.LIGHTGREEN_EX}Header editing completed.\n")
+    return df
+        
+
+
+
+
+
 
 
 
@@ -120,5 +258,8 @@ def main(argv=None):
     if data_file is None:
         print("No file selected. Exiting.")
         return 1
-    load_dataset(data_file)
-    print("End of file...")
+    df = prepare_data(load_dataset(data_file))
+
+    print("\nFinal dataset preview:")
+    print_sample_with_dtypes(df, n=10)
+    print("\nEnd of file...")

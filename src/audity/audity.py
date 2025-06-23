@@ -5,7 +5,8 @@
 import os
 import sys
 import argparse
-import importlib
+import importlib.metadata
+from typing import Optional, Union, List, Dict, Any
 
 from colorama import Fore, Back, Style, init as colorama_init
 import questionary
@@ -46,7 +47,7 @@ parser.add_argument('-v', '--version', action='version', version=__version__, he
 #region: functions
 
 
-def browse_files(start_path: str=".") -> str:
+def browse_files(start_path: str=".") -> Union[str, None]:
     if start_path is None:
         start_path = "."
     current_path = os.path.abspath(start_path)
@@ -55,7 +56,7 @@ def browse_files(start_path: str=".") -> str:
         entries = sorted(entries, key=lambda x: (not os.path.isdir(os.path.join(current_path, x)), x.lower()))
         choices = []
         if os.path.dirname(current_path) != current_path:
-            choices.append(".. [Go up]")
+            choices.append("[Go up] ..")
         for entry in entries:
             full_path = os.path.join(current_path, entry)
             if os.path.isdir(full_path):
@@ -63,14 +64,48 @@ def browse_files(start_path: str=".") -> str:
             else:
                 choices.append(entry)
         selected = questionary.select(
-            f"Browsing: {current_path}",
-            choices=choices + ["[Cancel]"]
+            f"Select dataset: {current_path}",
+            choices=choices + ["[Cancel]"],
         ).ask()
         if selected is None or selected == "[Cancel]":
             return None
-        if selected == ".. [Go up]":
+        if selected == "[Go up] ..":
             current_path = os.path.dirname(current_path)
         elif selected.startswith("[DIR] "):
             current_path = os.path.join(current_path, selected[6:])
         else:
             return os.path.join(current_path, selected)
+
+
+def load_dataset(file_path: str) -> pd.DataFrame:
+    try:
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        file_extension = os.path.splitext(file_path)[1].lower()
+    
+        if file_extension in ['.csv']:
+            return pd.read_csv(file_path)
+        elif file_extension in ['.xlsx', '.xls']:
+            return pd.read_excel(file_path)
+        elif file_extension in ['.json']:
+            return pd.read_json(file_path)
+        elif file_extension in ['.parquet']:
+            return pd.read_parquet(file_path)
+        else:
+            raise ValueError(f"Unsupported file format: {file_extension}")
+    except Exception as e:
+        print(f"Error loading dataset\n{e}")
+        sys.exit(1)
+
+
+
+
+
+def main(argv=None):
+    data_file = browse_files()
+    if data_file is None:
+        print("No file selected. Exiting.")
+        return 1
+    raw_data = load_dataset(data_file)
+    print(raw_data.dtypes)

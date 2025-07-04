@@ -8,11 +8,15 @@ import argparse
 import importlib.metadata
 from typing import Optional, Union, List, Dict, Any
 
+
 from colorama import Fore, Back, Style, init as colorama_init
+colorama_init(autoreset=True)
 import questionary
 from halo import Halo
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')  # Use TkAgg backend for matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import openpyxl
@@ -26,7 +30,9 @@ try:
 except importlib.metadata.PackageNotFoundError:
     __version__ = "Package not installed..."
 
-colorama_init(autoreset=True)
+
+
+spinner = Halo("Loading...", spinner="dots")
 
 
 # Set argument parsing
@@ -91,6 +97,7 @@ def print_sample_with_dtypes(df: pd.DataFrame, n: int = 5):
 
 def load_dataset(file_path: str) -> pd.DataFrame:
     try:
+        spinner.start(text=f"Loading dataset...")
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
 
@@ -107,8 +114,10 @@ def load_dataset(file_path: str) -> pd.DataFrame:
         else:
             raise ValueError(f"Unsupported file format: {file_extension}")
     except Exception as e:
-        print(f"{Back.LIGHTYELLOW_EX}{Fore.BLACK}Error loading dataset{Style.RESET_ALL}\n{Fore.LIGHTYELLOW_EX}{e}")
+        spinner.fail(f"{Back.LIGHTYELLOW_EX}{Fore.BLACK}Error loading dataset{Style.RESET_ALL}")
+        print(f"\n{Fore.LIGHTYELLOW_EX}{e}")
         sys.exit(1)
+    spinner.succeed("Dataset loaded successfully.")
     return df
 
 
@@ -359,7 +368,7 @@ def scatter_plot(df) -> None:
     plt.ylabel(y_header)
     plt.grid(True)
     plt.show()
-    
+
 
 
 
@@ -368,7 +377,56 @@ def scatter_plot(df) -> None:
 
 
 def audity(df: pd.DataFrame) -> None:
-    pass
+    """
+    Main loop functions of audity.
+    This function loops which lets the user choose and try different options.
+    Options include changing headers, types, and plotting different charts
+    """
+    print('\n' * 3) # Print a new lines for better readability
+    print(" Audity : Visualize and Audit Your Data ".center(os.get_terminal_size().columns),'-')
+    print_sample_with_dtypes(df, n=10)
+    print()
+
+    features = [
+        "Edit Dataframe",
+        "Line Plot",
+        "Bar Plot",
+        "Scatter Plot",
+        "Exit"
+    ]
+
+    # Main loop
+    while True:
+        print()
+        user = questionary.select(
+            "What do you want to do?",
+            choices=features
+        ).ask()
+        if user is None:
+            user = questionary.confirm(
+                "Do you want to exit?",
+                default=True
+            ).ask()
+            print("Exiting Audity. Goodbye!")
+            break
+        if user == "Exit":
+            print("Exiting Audity. Goodbye!")
+            break
+        elif user == "Edit Dataframe":
+            df = prepare_data(df)
+            print("Updated dataframe preview:")
+            print_sample_with_dtypes(df, n=5)
+        elif user == "Line Plot":
+            line_plot(df)
+        elif user == "Bar Plot":
+            bar_plot(df)
+        elif user == "Scatter Plot":
+            scatter_plot(df)
+
+
+        else:
+            print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")
+            continue
 
 
 def main(argv=None):
@@ -376,8 +434,6 @@ def main(argv=None):
     if data_file is None:
         print("No file selected. Exiting.")
         return 1
-    df = prepare_data(load_dataset(data_file))
-
-    print("\nFinal dataset preview:")
-    print_sample_with_dtypes(df, n=10)
-    print("\nEnd of file...")
+    df = load_dataset(data_file)
+    audity(df)
+    return 0

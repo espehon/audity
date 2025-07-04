@@ -22,7 +22,7 @@ import openpyxl
 #region: startup
 
 try:
-    __version__ = f"tasky {importlib.metadata.version('tasky_cli')} from tasky_cli"
+    __version__ = f"tasky {importlib.metadata.version('audity')} from audity"
 except importlib.metadata.PackageNotFoundError:
     __version__ = "Package not installed..."
 
@@ -242,7 +242,124 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
         print_sample_with_dtypes(df, n=5)
     print(f"\n {Fore.LIGHTGREEN_EX}Header editing completed.\n")
     return df
-        
+
+
+def select_x_y_headers(df: pd.DataFrame) -> (str, str):
+    headers = df.columns.tolist()
+    x_header = questionary.select(
+        "Select X header",
+        choices=headers + ["[Cancel]"]
+    ).ask()
+    if x_header is None or x_header == "[Cancel]":
+        print("X header selection cancelled.")
+        return None, None
+    
+    y_header = questionary.select(
+        "Select Y header",
+        choices=headers + ["[Cancel]"]
+    ).ask()
+    if y_header is None or y_header == "[Cancel]":
+        print("Y header selection cancelled.")
+        return None, None
+    
+    return x_header, y_header
+
+
+def select_legend(df: pd.DataFrame) -> Optional[str]:
+    headers = df.columns.tolist()
+    legend_header = questionary.select(
+        "Select legend header (optional)",
+        choices=headers + ["[None]"]
+    ).ask()
+    if legend_header is None or legend_header == "[None]":
+        return None
+    return legend_header
+
+
+def line_plot(df) -> None:
+    """
+    Create a line plot for the selected X and Y headers.
+    """
+    x_header, y_header = select_x_y_headers(df)
+    if x_header is None or y_header is None:
+        print("Line plot creation cancelled.")
+        return
+    
+    legend_header = select_legend(df)
+    if legend_header is not None:
+        if legend_header not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend_header}' does not exist. No legend will be used.")
+            legend_header = None
+    
+    plt.figure(figsize=(10, 6))
+    if legend_header:
+        sns.lineplot(data=df, x=x_header, y=y_header, hue=legend_header)
+        plt.title(f"Line Plot: {y_header} vs {x_header} by {legend_header}")
+    else:
+        sns.lineplot(data=df, x=x_header, y=y_header)
+        plt.title(f"Line Plot: {y_header} vs {x_header}")
+    plt.xlabel(x_header)
+    plt.ylabel(y_header)
+    plt.grid(True)
+    plt.show()
+
+
+def bar_plot(df) -> None:
+    """
+    Create a bar plot for the selected X and Y headers.
+    """
+    x_header, y_header = select_x_y_headers(df)
+    if x_header is None or y_header is None:
+        print("Bar plot creation cancelled.")
+        return
+    
+    legend_header = select_legend(df)
+    if legend_header is not None:
+        if legend_header not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend_header}' does not exist. No legend will be used.")
+            legend_header = None
+    
+    plt.figure(figsize=(10, 6))
+    if legend_header:
+        sns.barplot(data=df, x=x_header, y=y_header, hue=legend_header)
+        plt.title(f"Bar Plot: {y_header} vs {x_header} by {legend_header}")
+    else:
+        sns.barplot(data=df, x=x_header, y=y_header)
+        plt.title(f"Bar Plot: {y_header} vs {x_header}")
+    plt.xlabel(x_header)
+    plt.ylabel(y_header)
+    plt.xticks(rotation=45)
+    plt.grid(True)
+    plt.show()
+
+
+def scatter_plot(df) -> None:
+    """
+    Create a scatter plot for the selected X and Y headers.
+    """
+    x_header, y_header = select_x_y_headers(df)
+    if x_header is None or y_header is None:
+        print("Scatter plot creation cancelled.")
+        return
+    
+    legend_header = select_legend(df)
+    if legend_header is not None:
+        if legend_header not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend_header}' does not exist. No legend will be used.")
+            legend_header = None
+    
+    plt.figure(figsize=(10, 6))
+    if legend_header:
+        sns.scatterplot(data=df, x=x_header, y=y_header, hue=legend_header)
+        plt.title(f"Scatter Plot: {y_header} vs {x_header} by {legend_header}")
+    else:
+        sns.scatterplot(data=df, x=x_header, y=y_header)
+        plt.title(f"Scatter Plot: {y_header} vs {x_header}")
+    plt.xlabel(x_header)
+    plt.ylabel(y_header)
+    plt.grid(True)
+    plt.show()
+    
 
 
 
@@ -250,7 +367,8 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 
-
+def audity(df: pd.DataFrame) -> None:
+    pass
 
 
 def main(argv=None):

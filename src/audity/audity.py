@@ -86,7 +86,7 @@ def browse_files(start_path: str=".") -> Union[str, None]:
 def print_sample_with_dtypes(df: pd.DataFrame, n: int = 5):
     # Create a DataFrame with one row: the dtypes as strings
     dtypes_row = pd.DataFrame([df.dtypes.astype(str).values], columns=df.columns)
-    dtypes_row.index = ['index/type']
+    dtypes_row.index = ['idx/type']
     # Get the sample
     sample = df.sample(n)
     # Concatenate dtypes row and sample
@@ -370,6 +370,28 @@ def scatter_plot(df) -> None:
     plt.show()
 
 
+def pair_plot(df: pd.DataFrame) -> None:
+    """
+    Create a pair plot for the DataFrame.
+    This function uses seaborn's pairplot to visualize pairwise relationships in the dataset.
+    """
+    legend = select_legend(df)
+    if legend is not None:
+        if legend not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
+            legend = None
+    try:
+        if legend:
+            sns.pairplot(df, hue=legend)
+            plt.suptitle(f"Pair Plot with Legend: {legend}", y=1.02) # Adjust title position
+        else:
+            sns.pairplot(df)
+            plt.suptitle("Pair Plot", y=1.02)  # Adjust title position
+        plt.show()
+    except Exception as e:
+        print(f"{Fore.LIGHTYELLOW_EX}Error creating pair plot: {e}")
+
+
 
 
 
@@ -392,6 +414,7 @@ def audity(df: pd.DataFrame) -> None:
         "Line Plot",
         "Bar Plot",
         "Scatter Plot",
+        "Pair Plot",
         "Exit"
     ]
 
@@ -422,7 +445,8 @@ def audity(df: pd.DataFrame) -> None:
             bar_plot(df)
         elif user == "Scatter Plot":
             scatter_plot(df)
-
+        elif user == "Pair Plot":
+            pair_plot(df)
 
         else:
             print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")

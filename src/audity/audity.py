@@ -121,7 +121,14 @@ def load_dataset(file_path: str) -> pd.DataFrame:
     return df
 
 
-def header_rename(df: pd.DataFrame, old_header: str) -> pd.DataFrame:
+def header_rename(df: pd.DataFrame) -> pd.DataFrame:
+    old_header = questionary.select(
+        "Select header to rename:",
+        choices=[{"name": col} for col in df.columns] + ["[Cancel]"]
+    ).ask()
+    if old_header is None or old_header == "[Cancel]":
+        print(f"{Fore.LIGHTYELLOW_EX}Header renaming cancelled.")
+        return df
     new_header = questionary.text(
             f"Enter new header name for '{old_header}':",
             default=old_header
@@ -140,54 +147,162 @@ def header_rename(df: pd.DataFrame, old_header: str) -> pd.DataFrame:
     return df
 
 
-def header_type_change(df: pd.DataFrame, header_name: str) -> pd.DataFrame:
-    new_type = questionary.select(
-            f"Select new type for '{header_name}':",
-            choices=[
-                "int64",
-                "float64",
-                "object",
-                "datetime64[ns]",
-                "category",
-                "[Cancel]"
-            ]
-        ).ask()
-    if new_type is None or new_type == "[Cancel]":
-        print(f"Header type change cancelled.")
+def header_type_change(df: pd.DataFrame) -> pd.DataFrame:
+    headers = questionary.checkbox(
+        "Select headers to change type (leave empty to cancel):",
+        choices=[{"name": col} for col in df.columns]
+    ).ask()
+    if headers is None or len(headers) == 0:
+        print(f"{Fore.LIGHTYELLOW_EX}No headers selected for type change. Operation cancelled.")
         return df
-    if new_type not in ['int64', 'float64', 'object', 'datetime64[ns]', 'category']:
-        print(f"{Fore.LIGHTYELLOW_EX}Unsupported type '{new_type}'. Operation cancelled.")
-        return df
-    try:
-        if new_type == 'int64':
-            df[header_name] = pd.to_numeric(df[header_name], errors='coerce').astype('Int64')
-        elif new_type == 'float64':
-            df[header_name] = df[header_name].astype('float64')
-        elif new_type == 'object':
-            df[header_name] = df[header_name].astype('object')
-        elif new_type == 'datetime64[ns]':
-            df[header_name] = pd.to_datetime(df[header_name], errors='coerce')
-        elif new_type == 'category':
-            df[header_name] = df[header_name].astype('category')
-        print(f"{Fore.GREEN}Header '{header_name}' type changed to '{new_type}'.")
-    except Exception as e:
-        print(f"{Back.LIGHTYELLOW_EX}{Fore.BLACK}Error changing header type:{Style.RESET_ALL}\n{Fore.LIGHTYELLOW_EX}{e}")
+    changes = 0
+    if len(headers) >= 1:
+        for header in headers:
+            new_type = questionary.select(
+                    f"Select new type for '{header}':",
+                    choices=[
+                        "int64",
+                        "float64",
+                        "object",
+                        "datetime64[ns]",
+                        "category",
+                        "[Cancel]"
+                    ]
+                ).ask()
+            if new_type is None or new_type == "[Cancel]":
+                print(f"Header type change cancelled.")
+                continue
+            if new_type not in ['int64', 'float64', 'object', 'datetime64[ns]', 'category']:
+                print(f"{Fore.LIGHTYELLOW_EX}Unsupported type '{new_type}'. Operation cancelled.")
+                continue
+            try:
+                if new_type == 'int64':
+                    df[header] = pd.to_numeric(df[header], errors='coerce').astype('Int64')
+                elif new_type == 'float64':
+                    df[header] = df[header].astype('float64')
+                elif new_type == 'object':
+                    df[header] = df[header].astype('object')
+                elif new_type == 'datetime64[ns]':
+                    df[header] = pd.to_datetime(df[header], errors='coerce')
+                elif new_type == 'category':
+                    df[header] = df[header].astype('category')
+                print(f"{Fore.GREEN}Header '{header}' type changed to '{new_type}'.")
+                changes += 1
+            except Exception as e:
+                print(f"{Back.LIGHTYELLOW_EX}{Fore.BLACK}Error changing header type:{Style.RESET_ALL}\n{Fore.LIGHTYELLOW_EX}{e}")
+    print(f"{Fore.GREEN}Changed types for {changes} headers.")
     return df
 
 
-def header_delete(df: pd.DataFrame, header_name: str) -> pd.DataFrame:
-    confirm = questionary.confirm(
-        f"Are you sure you want to delete the header '{header_name}'?",
-        default=False
+def header_delete(df: pd.DataFrame) -> pd.DataFrame:
+    columns_to_delete = questionary.checkbox(
+        "Select headers to delete (leave empty to cancel):",
+        choices=[{"name": col} for col in df.columns]
     ).ask()
-    if not confirm:
-        print("Header deletion cancelled.")
+    if columns_to_delete is None or len(columns_to_delete) == 0:
+        print(f"{Fore.LIGHTYELLOW_EX}No headers selected for deletion. Operation cancelled.")
         return df
-    if header_name not in df.columns:
-        print(f"Header '{header_name}' does not exist. No changes made.")
-        return df
-    df.drop(columns=[header_name], inplace=True)
-    print(f"{Fore.GREEN}Header '{header_name}' deleted.")
+    if len(columns_to_delete) >= 1:
+        user = questionary.confirm(
+            f"You selected {len(columns_to_delete)} headers to delete. Are you sure?",
+            default=False
+        ).ask()
+        if user is None or not user:
+            print(f"{Fore.LIGHTYELLOW_EX}Operation cancelled.")
+            return df
+        df.drop(columns=columns_to_delete, inplace=True)
+        print(f"{Fore.GREEN}Deleted {len(columns_to_delete)} headers: {', '.join(columns_to_delete)}.")
+    return df
+
+
+def remove_duplicates(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove duplicate rows from the DataFrame.
+    """
+    columns_to_check = questionary.checkbox(
+        "Select columns to check for duplicates (leave empty to check all columns):",
+        choices=[{"name": col} for col in df.columns]
+    ).ask()
+    if columns_to_check is None:
+        user = questionary.confirm(
+            "No columns selected. Do you want to check all columns for duplicates?",
+            default=False
+        ).ask()
+        if user is None or not user:
+            print(f"{Fore.LIGHTYELLOW_EX}No columns selected. No duplicates will be checked.")
+            return df
+        columns_to_check = df.columns.tolist()
+
+    initial_count = len(df)
+    df = df.drop_duplicates(subset=columns_to_check, keep='first')
+    final_count = len(df)
+    if initial_count == final_count:
+        print(f"{Fore.LIGHTYELLOW_EX}No duplicates found.")
+    else:
+        print(f"{Fore.GREEN}Removed {initial_count - final_count} duplicate rows.")
+    return df
+
+
+def remove_missing_values(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove rows with missing values from the DataFrame.
+    """
+    columns_to_check = questionary.checkbox(
+        "Select columns to check for missing values (leave empty to check all columns):",
+        choices=[{"name": col} for col in df.columns]
+    ).ask()
+    if columns_to_check is None:
+        user = questionary.confirm(
+            "No columns selected. Do you want to check all columns for missing values?",
+            default=False
+        ).ask()
+        if user is None or not user:
+            print(f"{Fore.LIGHTYELLOW_EX}No columns selected. No missing values will be checked.")
+            return df
+        columns_to_check = df.columns.tolist()
+    
+    initial_count = len(df)
+    df = df.dropna(subset=columns_to_check, how='any')
+    final_count = len(df)
+    if initial_count == final_count:
+        print(f"{Fore.LIGHTYELLOW_EX}No missing values found.")
+    else:
+        print(f"{Fore.GREEN}Removed {initial_count - final_count} rows with missing values.")
+    return df
+
+
+def remove_outliers_IQR(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove outliers from the DataFrame using the IQR method.
+    """
+    columns_to_check = questionary.checkbox(
+        "Select columns to check for outliers (leave empty to check all numeric columns):",
+        choices=[{"name": col} for col in df.select_dtypes(include=[np.number]).columns]
+    ).ask()
+    if columns_to_check is None:
+        user = questionary.confirm(
+            "No columns selected. Do you want to check all numeric columns for outliers?",
+            default=False
+        ).ask()
+        if user is None or not user:
+            print(f"{Fore.LIGHTYELLOW_EX}No columns selected. No outliers will be checked.")
+            return df
+        columns_to_check = df.select_dtypes(include=[np.number]).columns.tolist()
+
+    initial_count = len(df)
+    for col in columns_to_check:
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        df = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
+    
+    final_count = len(df)
+    if initial_count == final_count:
+        print(f"{Fore.LIGHTYELLOW_EX}No outliers found.")
+    else:
+        print(f"{Fore.GREEN}Removed {initial_count - final_count} rows with outliers.")
     return df
 
 
@@ -203,34 +318,16 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     
     edit_mode = True
     while edit_mode:
-        user = questionary.confirm(
-        "Do you want to edit the dataset headers?",
-        default=True
-        ).ask()
-        if not user:
-            print("Exiting header editing mode.")
-            edit_mode = False
-            continue
-        
-        # Header selection
-        header_types = df.dtypes.items()
-        selected_header = questionary.select(
-            "Select header to edit",
-            choices=[f"{name} ({dtype})" for name, dtype in header_types] + ["[Finish]"]
-        ).ask()
-        if selected_header is None or selected_header == "[Finish]":
-            if exit_prompt():
-                edit_mode = False
-            continue
-        header_name = selected_header.split(" (")[0]
-
         # Action selection 
         user = questionary.select(
-            f"What do you want to do with {selected_header}?",
+            f"What do you want to do?",
             choices=[
                 "Edit header name",
                 "Change header type",
                 "Delete header",
+                "Remove duplicates",
+                "Remove missing values",
+                "Remove outliers (IQR method)",
                 "[Cancel]"
             ]
         ).ask()
@@ -238,16 +335,23 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
             if exit_prompt():
                 edit_mode = False
             continue
-        
         if user == "Edit header name":
-            df = header_rename(df, header_name)
+            df = header_rename(df)
         elif user == "Change header type":
-            df = header_type_change(df, header_name)
+            df = header_type_change(df)
         elif user == "Delete header":
-            df = header_delete(df, header_name)
+            df = header_delete(df)
+        elif user == "Remove duplicates":
+            df = remove_duplicates(df)
+        elif user == "Remove missing values":
+            df = remove_missing_values(df)
+        elif user == "Remove outliers (IQR method)":
+            df = remove_outliers_IQR(df)
         else:
-            print(f"{Fore.LIGHTYELLOW_EX}Unknown action. Please try again.")
+            print(f"{Fore.LIGHTYELLOW_EX}Unknown action selected. Please try again.")
             continue
+            
+
         print_sample_with_dtypes(df, n=5)
     print(f"\n {Fore.LIGHTGREEN_EX}Header editing completed.\n")
     return df
@@ -284,6 +388,8 @@ def select_legend(df: pd.DataFrame) -> Optional[str]:
         return None
     return legend
 
+
+#region: plotting functions
 
 def line_plot(df) -> None:
     """
@@ -512,6 +618,7 @@ def distribution_plot(df: pd.DataFrame) -> None:
 
 
 
+#endregion: plotting functions
 
 
 
@@ -587,3 +694,5 @@ def main(argv=None):
     df = load_dataset(data_file)
     audity(df)
     return 0
+
+#endregion: functions

@@ -95,6 +95,19 @@ def print_sample_with_dtypes(df: pd.DataFrame, n: int = 5):
     print(preview)
 
 
+def print_describe_with_dtypes(df: pd.DataFrame) -> None:
+    """
+    Print a describe() summary with dtypes as the second row under each header.
+    """
+    desc = df.describe(include='all')
+    # Create a DataFrame with one row: the dtypes as strings
+    dtypes_row = pd.DataFrame([df.dtypes.astype(str).values], columns=df.columns, index=['dtype'])
+    # Reindex desc to start with dtype row, then the rest of describe
+    combined = pd.concat([dtypes_row, desc])
+    print()
+    print(combined)
+
+
 def load_dataset(file_path: str) -> pd.DataFrame:
     try:
         spinner.start(text=f"Loading dataset...")
@@ -314,7 +327,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
             ).ask()
         return answer
     
-    print_sample_with_dtypes(df, n=10)
+    print_describe_with_dtypes(df)
     
     edit_mode = True
     while edit_mode:
@@ -322,6 +335,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
         user = questionary.select(
             f"What do you want to do?",
             choices=[
+                "Sample dataset",
                 "Edit header name",
                 "Change header type",
                 "Delete header",
@@ -335,7 +349,9 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
             if exit_prompt():
                 edit_mode = False
             continue
-        if user == "Edit header name":
+        if user == "Sample dataset":
+            print_sample_with_dtypes(df)
+        elif user == "Edit header name":
             df = header_rename(df)
         elif user == "Change header type":
             df = header_type_change(df)
@@ -350,9 +366,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
         else:
             print(f"{Fore.LIGHTYELLOW_EX}Unknown action selected. Please try again.")
             continue
-            
-
-        print_sample_with_dtypes(df, n=5)
+        print_describe_with_dtypes(df)
     print(f"\n {Fore.LIGHTGREEN_EX}Header editing completed.\n")
     return df
 
@@ -379,7 +393,11 @@ def select_x_y_headers(df: pd.DataFrame) -> (str, str):
 
 
 def select_legend(df: pd.DataFrame) -> Optional[str]:
-    headers = df.columns.tolist()
+    """
+    Select a legend header from the DataFrame.
+    Selection is limited to Object type headers
+    """
+    headers = [col for col in df.columns if df.dtypes[col] == 'object']
     legend = questionary.select(
         "Select legend header (optional)",
         choices=headers + ["[None]"]
@@ -607,9 +625,18 @@ def distribution_plot(df: pd.DataFrame) -> None:
     if x_header not in df.columns:
         print(f"{Fore.LIGHTYELLOW_EX}Selected header '{x_header}' does not exist in the DataFrame. No distribution plot will be created.")
         return
+    legend = select_legend(df)
+    if legend is not None and legend != "[None]":
+        if legend not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
+            legend = None
     try:
-        g = sns.displot(df[x_header], kde=True, height=6, aspect=1.6)
-        g.fig.suptitle(f"Distribution Plot: {x_header}", y=0.98)
+        if legend:
+            g = sns.displot(df, x=x_header, hue=legend, kde=True, height=6, aspect=1.6)
+            g.fig.suptitle(f"Distribution Plot: {x_header} by {legend}", y=0.98)
+        else:
+            g = sns.displot(df[x_header], kde=True, height=6, aspect=1.6)
+            g.fig.suptitle(f"Distribution Plot: {x_header}", y=0.98)
         g.set_axis_labels(x_header, "Density")
         g.fig.tight_layout()  # Helps prevent title cutoff
         plt.show()
@@ -634,6 +661,8 @@ def audity(df: pd.DataFrame) -> None:
     print()
 
     features = [
+        "Sample Dataframe",
+        "Describe Dataframe",
         "Edit Dataframe",
         "Distribution Plot",
         "Box Plot",
@@ -662,6 +691,10 @@ def audity(df: pd.DataFrame) -> None:
         if user == "Exit":
             print("Exiting Audity. Goodbye!")
             break
+        elif user == "Sample Dataframe":
+            print_sample_with_dtypes(df, n=10)
+        elif user == "Describe Dataframe":
+            print_describe_with_dtypes(df)
         elif user == "Edit Dataframe":
             df = prepare_data(df)
             print("Updated dataframe preview:")

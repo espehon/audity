@@ -276,13 +276,13 @@ def select_x_y_headers(df: pd.DataFrame) -> (str, str):
 
 def select_legend(df: pd.DataFrame) -> Optional[str]:
     headers = df.columns.tolist()
-    legend_header = questionary.select(
+    legend = questionary.select(
         "Select legend header (optional)",
         choices=headers + ["[None]"]
     ).ask()
-    if legend_header is None or legend_header == "[None]":
+    if legend is None or legend == "[None]":
         return None
-    return legend_header
+    return legend
 
 
 def line_plot(df) -> None:
@@ -294,16 +294,16 @@ def line_plot(df) -> None:
         print("Line plot creation cancelled.")
         return
     
-    legend_header = select_legend(df)
-    if legend_header is not None:
-        if legend_header not in df.columns:
-            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend_header}' does not exist. No legend will be used.")
-            legend_header = None
+    legend = select_legend(df)
+    if legend is not None:
+        if legend not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
+            legend = None
     
     plt.figure(figsize=(10, 6))
-    if legend_header:
-        sns.lineplot(data=df, x=x_header, y=y_header, hue=legend_header)
-        plt.title(f"Line Plot: {y_header} vs {x_header} by {legend_header}")
+    if legend:
+        sns.lineplot(data=df, x=x_header, y=y_header, hue=legend)
+        plt.title(f"Line Plot: {y_header} vs {x_header} by {legend}")
     else:
         sns.lineplot(data=df, x=x_header, y=y_header)
         plt.title(f"Line Plot: {y_header} vs {x_header}")
@@ -322,16 +322,16 @@ def bar_plot(df) -> None:
         print("Bar plot creation cancelled.")
         return
     
-    legend_header = select_legend(df)
-    if legend_header is not None:
-        if legend_header not in df.columns:
-            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend_header}' does not exist. No legend will be used.")
-            legend_header = None
+    legend = select_legend(df)
+    if legend is not None:
+        if legend not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
+            legend = None
     
     plt.figure(figsize=(10, 6))
-    if legend_header:
-        sns.barplot(data=df, x=x_header, y=y_header, hue=legend_header)
-        plt.title(f"Bar Plot: {y_header} vs {x_header} by {legend_header}")
+    if legend:
+        sns.barplot(data=df, x=x_header, y=y_header, hue=legend)
+        plt.title(f"Bar Plot: {y_header} vs {x_header} by {legend}")
     else:
         sns.barplot(data=df, x=x_header, y=y_header)
         plt.title(f"Bar Plot: {y_header} vs {x_header}")
@@ -351,16 +351,16 @@ def scatter_plot(df) -> None:
         print("Scatter plot creation cancelled.")
         return
     
-    legend_header = select_legend(df)
-    if legend_header is not None:
-        if legend_header not in df.columns:
-            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend_header}' does not exist. No legend will be used.")
-            legend_header = None
+    legend = select_legend(df)
+    if legend is not None:
+        if legend not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
+            legend = None
     
     plt.figure(figsize=(10, 6))
-    if legend_header:
-        sns.scatterplot(data=df, x=x_header, y=y_header, hue=legend_header)
-        plt.title(f"Scatter Plot: {y_header} vs {x_header} by {legend_header}")
+    if legend:
+        sns.scatterplot(data=df, x=x_header, y=y_header, hue=legend)
+        plt.title(f"Scatter Plot: {y_header} vs {x_header} by {legend}")
     else:
         sns.scatterplot(data=df, x=x_header, y=y_header)
         plt.title(f"Scatter Plot: {y_header} vs {x_header}")
@@ -392,6 +392,123 @@ def pair_plot(df: pd.DataFrame) -> None:
         print(f"{Fore.LIGHTYELLOW_EX}Error creating pair plot: {e}")
 
 
+def box_plot(df: pd.DataFrame) -> None:
+    """
+    Create a box plot for the DataFrame.
+    This function uses seaborn's boxplot to visualize the distribution of data across different categories.
+    """
+    headers = df.columns.tolist()
+    x_header = questionary.select(
+        "Select X header for box plot",
+        choices=headers + ["[Cancel]"]
+    ).ask()
+    if x_header is None or x_header == "[Cancel]":
+        print("Box plot creation cancelled.")
+        return
+    
+    y_header = questionary.select(
+        "Select Y header for box plot",
+        choices=headers + ["[Cancel]"]
+    ).ask()
+    if y_header is None or y_header == "[Cancel]":
+        print("Box plot creation cancelled.")
+        return
+    if x_header not in df.columns or y_header not in df.columns:
+        print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No box plot will be created.")
+        return
+    
+    legend = select_legend(df)
+    if legend is not None:
+        if legend not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
+            legend = None
+    
+    plt.figure(figsize=(10, 6))
+    if legend:
+        sns.boxplot(data=df, x=x_header, y=y_header, hue=legend)
+        plt.title(f"Box Plot: {y_header} by {x_header} with Legend: {legend}")
+    else:
+        sns.boxplot(data=df, x=x_header, y=y_header)
+        plt.title(f"Box Plot: {y_header} by {x_header}")
+    plt.xlabel(x_header)
+    plt.ylabel(y_header)
+    plt.xticks(rotation=45)
+    plt.grid(True)
+    plt.show()
+
+
+def violin_plot(df: pd.DataFrame) -> None:
+    """
+    Create a violin plot for the DataFrame.
+    This function uses seaborn's violinplot to visualize the distribution of data across different categories.
+    """
+    headers = df.columns.tolist()
+    x_header = questionary.select(
+        "Select X header for violin plot",
+        choices=headers + ["[Cancel]"]
+    ).ask()
+    if x_header is None or x_header == "[Cancel]":
+        print("Violin plot creation cancelled.")
+        return
+    
+    y_header = questionary.select(
+        "Select Y header for violin plot",
+        choices=headers + ["[Cancel]"]
+    ).ask()
+    if y_header is None or y_header == "[Cancel]":
+        print("Violin plot creation cancelled.")
+        return
+    if x_header not in df.columns or y_header not in df.columns:
+        print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No violin plot will be created.")
+        return
+    
+    legend = select_legend(df)
+    if legend is not None:
+        if legend not in df.columns:
+            print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
+            legend = None
+    
+    plt.figure(figsize=(10, 6))
+    if legend:
+        sns.violinplot(data=df, x=x_header, y=y_header, hue=legend)
+        plt.title(f"Violin Plot: {y_header} by {x_header} with Legend: {legend}")
+    else:
+        sns.violinplot(data=df, x=x_header, y=y_header)
+        plt.title(f"Violin Plot: {y_header} by {x_header}")
+    plt.xlabel(x_header)
+    plt.ylabel(y_header)
+    plt.xticks(rotation=45)
+    plt.grid(True)
+    plt.show()
+
+
+def distribution_plot(df: pd.DataFrame) -> None:
+    """
+    Create a distribution plot for the DataFrame.
+    This function uses seaborn's displot to visualize the distribution of a selected numeric column.
+    """
+    headers = df.select_dtypes(include=[np.number]).columns.tolist()
+    if not headers:
+        print(f"{Fore.LIGHTYELLOW_EX}No numeric columns found in the DataFrame. No distribution plot will be created.")
+        return
+    x_header = questionary.select(
+        "Select header for distribution plot",
+        choices=headers + ["[Cancel]"]
+    ).ask()
+    if x_header is None or x_header == "[Cancel]":
+        print("Distribution plot creation cancelled.")
+        return
+    if x_header not in df.columns:
+        print(f"{Fore.LIGHTYELLOW_EX}Selected header '{x_header}' does not exist in the DataFrame. No distribution plot will be created.")
+        return
+    try:
+        g = sns.displot(df[x_header], kde=True, height=6, aspect=1.6)
+        g.fig.suptitle(f"Distribution Plot: {x_header}", y=0.98)
+        g.set_axis_labels(x_header, "Density")
+        g.fig.tight_layout()  # Helps prevent title cutoff
+        plt.show()
+    except Exception as e:
+        print(f"{Fore.LIGHTYELLOW_EX}Error creating distribution plot: {e}")
 
 
 
@@ -411,6 +528,9 @@ def audity(df: pd.DataFrame) -> None:
 
     features = [
         "Edit Dataframe",
+        "Distribution Plot",
+        "Box Plot",
+        "Violin Plot",
         "Line Plot",
         "Bar Plot",
         "Scatter Plot",
@@ -447,6 +567,12 @@ def audity(df: pd.DataFrame) -> None:
             scatter_plot(df)
         elif user == "Pair Plot":
             pair_plot(df)
+        elif user == "Box Plot":
+            box_plot(df)
+        elif user == "Violin Plot":
+            violin_plot(df)
+        elif user == "Distribution Plot":
+            distribution_plot(df)
 
         else:
             print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")

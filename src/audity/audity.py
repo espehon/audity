@@ -85,8 +85,7 @@ def browse_files(start_path: str=".") -> Union[str, None]:
 
 def print_sample_with_dtypes(df: pd.DataFrame, n: int = 5):
     # Create a DataFrame with one row: the dtypes as strings
-    dtypes_row = pd.DataFrame([df.dtypes.astype(str).values], columns=df.columns)
-    dtypes_row.index = ['idx/type']
+    dtypes_row = pd.DataFrame([df.dtypes.astype(str).values], columns=df.columns, index=['idx/type'])
     # Get the sample
     sample = df.sample(n)
     # Concatenate dtypes row and sample
@@ -371,7 +370,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def select_x_y_headers(df: pd.DataFrame) -> (str, str):
+def select_x_y_headers(df: pd.DataFrame) -> tuple[Optional[str], Optional[str]]:
     headers = df.columns.tolist()
     x_header = questionary.select(
         "Select X header",

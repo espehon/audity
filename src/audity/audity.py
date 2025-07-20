@@ -673,6 +673,58 @@ def joint_grid_plot(df: pd.DataFrame) -> None:
     plt.show()
 
 
+def relation_plot(df: pd.DataFrame) -> None:
+    """
+    Create a relation plot for the DataFrame.
+    X and Y axis must be numeric.
+    Marker color can be set to a categorical header.
+    Marker size can be set to a numeric header.
+    """
+    x_header = questionary.select(
+        "Select X header for relation plot (numeric only)",
+        choices=df.select_dtypes(include=[np.number]).columns.tolist() + ["[Cancel]"]
+    ).ask()
+    if x_header is None or x_header == "[Cancel]":
+        print("Operation cancelled.")
+        return
+    y_header = questionary.select(
+        "Select Y header for relation plot (numeric only)",
+        choices=df.select_dtypes(include=[np.number]).columns.tolist() + ["[Cancel]"]
+    ).ask()
+    if y_header is None or y_header == "[Cancel]":
+        print("Operation cancelled.")
+        return
+    if x_header not in df.columns or y_header not in df.columns:
+        print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No relation plot will be created.")
+        return
+    legend = select_legend(df)
+    if legend == "[None]":
+        legend = None
+    size_header = questionary.select(
+        "Select size header for relation plot (numeric only, optional)",
+        choices=df.select_dtypes(include=[np.number]).columns.tolist() + ["[None]"]
+    ).ask()
+    if size_header is None or size_header == "[None]":
+        size_header = None
+    elif size_header not in df.columns:
+        print(f"{Fore.LIGHTYELLOW_EX}Size header '{size_header}' does not exist. No size will be used.")
+        size_header = None
+    sns.relplot(
+        data=df,
+        x=x_header,
+        y=y_header,
+        hue=legend,
+        size=size_header,
+        kind="scatter",
+        height=6,
+        aspect=1.6
+    )
+    plt.title(f"Relation Plot: {y_header} vs {x_header}" + (f" by {legend}" if legend else ""))
+    plt.xlabel(x_header)
+    plt.ylabel(y_header)
+    plt.grid(True)
+    plt.show()
+
 
 #endregion: plotting functions
 
@@ -700,6 +752,7 @@ def audity(df: pd.DataFrame) -> None:
         "Bar Plot",
         "Scatter Plot",
         "Joint Grid Plot",
+        "Relation Plot",
         "Pair Plot",
         "Exit"
     ]
@@ -745,6 +798,8 @@ def audity(df: pd.DataFrame) -> None:
             distribution_plot(df)
         elif user == "Joint Grid Plot":
             joint_grid_plot(df)
+        elif user == "Relation Plot":
+            relation_plot(df)
 
         else:
             print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")

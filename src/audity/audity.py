@@ -643,6 +643,36 @@ def distribution_plot(df: pd.DataFrame) -> None:
         print(f"{Fore.LIGHTYELLOW_EX}Error creating distribution plot: {e}")
 
 
+def joint_grid_plot(df: pd.DataFrame) -> None:
+    """
+    Create a joint grid plot for the DataFrame.
+    X-axis can be numeric or categorical, Y-axis must be numeric.
+    """
+    x_header = questionary.select(
+        "Select X header for joint grid plot (numeric or categorical)",
+        choices=df.columns.tolist() + ["[Cancel]"]
+    ).ask()
+    if x_header is None or x_header == "[Cancel]":
+        print("Operation cancelled.")
+        return
+    y_header = questionary.select(
+        "Select Y header for joint grid plot (numeric only)",
+        choices=df.select_dtypes(include=[np.number]).columns.tolist() + ["[Cancel]"]
+    ).ask()
+    if y_header is None or y_header == "[Cancel]":
+        print("Operation cancelled.")
+        return
+    if x_header not in df.columns or y_header not in df.columns:
+        print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No joint grid plot will be created.")
+        return
+    g = sns.jointplot(data=df, x=x_header, y=y_header, kind="hist", height=8)
+    g.plot_joint(sns.histplot, cmap=sns.dark_palette("#69d", reverse=True, as_cmap=True), cbar=True)
+    g.plot_marginals(sns.histplot, element="step")
+    g.figure.suptitle(f"Joint Grid Plot: {y_header} vs {x_header}", y=1.02)  # Adjust title position
+    g.set_axis_labels(x_header, y_header)
+    plt.show()
+
+
 
 #endregion: plotting functions
 
@@ -669,6 +699,7 @@ def audity(df: pd.DataFrame) -> None:
         "Line Plot",
         "Bar Plot",
         "Scatter Plot",
+        "Joint Grid Plot",
         "Pair Plot",
         "Exit"
     ]
@@ -712,6 +743,8 @@ def audity(df: pd.DataFrame) -> None:
             violin_plot(df)
         elif user == "Distribution Plot":
             distribution_plot(df)
+        elif user == "Joint Grid Plot":
+            joint_grid_plot(df)
 
         else:
             print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")

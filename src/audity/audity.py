@@ -440,6 +440,17 @@ def select_legend(df: pd.DataFrame) -> Optional[str]:
     return legend
 
 
+def get_xtick_rotation(x_values, max_labels=10, max_label_len=8):
+    """
+    Decide xtick rotation based on label count and length.
+    Returns 45 if any label is long or there are many labels, else 0.
+    """
+    unique_labels = pd.Series(x_values).unique()
+    if len(unique_labels) > max_labels or any(len(str(lbl)) > max_label_len for lbl in unique_labels):
+        return 45
+    return 0
+
+
 #region: plotting functions
 
 def line_plot(df) -> None:
@@ -466,6 +477,7 @@ def line_plot(df) -> None:
         plt.title(f"Line Plot: {y_header} vs {x_header}")
     plt.xlabel(x_header)
     plt.ylabel(y_header)
+    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
     plt.grid(True)
     plt.show()
 
@@ -494,7 +506,7 @@ def bar_plot(df) -> None:
         plt.title(f"Bar Plot: {y_header} vs {x_header}")
     plt.xlabel(x_header)
     plt.ylabel(y_header)
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
     plt.grid(True)
     plt.show()
 
@@ -523,6 +535,7 @@ def scatter_plot(df) -> None:
         plt.title(f"Scatter Plot: {y_header} vs {x_header}")
     plt.xlabel(x_header)
     plt.ylabel(y_header)
+    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
     plt.grid(True)
     plt.show()
 
@@ -595,7 +608,7 @@ def box_plot(df: pd.DataFrame) -> None:
     if x_header is not None: 
         plt.xlabel(x_header)
     plt.ylabel(y_header)
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
     plt.grid(True)
     plt.show()
 
@@ -646,7 +659,7 @@ def violin_plot(df: pd.DataFrame) -> None:
     if x_header is not None:
         plt.xlabel(x_header)
     plt.ylabel(y_header)
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
     plt.grid(True)
     plt.show()
 

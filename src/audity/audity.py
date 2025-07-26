@@ -341,10 +341,10 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
                 "Remove duplicates",
                 "Remove missing values",
                 "Remove outliers (IQR method)",
-                "[Cancel]"
+                "[Done] Finish editing",
             ]
         ).ask()
-        if user is None or user == "[Cancel]":
+        if user is None or user == "[Done] Finish editing":
             if exit_prompt():
                 edit_mode = False
             continue

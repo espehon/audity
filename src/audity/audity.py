@@ -88,10 +88,24 @@ def print_sample_with_dtypes(df: pd.DataFrame, n: int = 5):
     dtypes_row = pd.DataFrame([df.dtypes.astype(str).values], columns=df.columns, index=['idx/type'])
     # Get the sample
     sample = df.sample(n)
+    sample.sort_index(inplace=True)  # Sort sample by index for better readability
     # Concatenate dtypes row and sample
     preview = pd.concat([dtypes_row, sample])
+    
+    # Estimate width: assume 12 chars per column (adjust as needed)
+    est_width = len(preview.columns) * 12
+    try:
+        term_width = os.get_terminal_size().columns
+    except OSError:
+        term_width = 80  # fallback if terminal size can't be determined
+
     print()
-    print(preview)
+    if est_width > term_width:
+        print(preview.T)
+        print(f"\nShape: {df.shape} | Output was transposed to fit on screen.")
+    else:
+        print(preview)
+        print(f"\nShape: {df.shape}")
 
 
 def print_describe_with_dtypes(df: pd.DataFrame) -> None:
@@ -103,8 +117,28 @@ def print_describe_with_dtypes(df: pd.DataFrame) -> None:
     dtypes_row = pd.DataFrame([df.dtypes.astype(str).values], columns=df.columns, index=['dtype'])
     # Reindex desc to start with dtype row, then the rest of describe
     combined = pd.concat([dtypes_row, desc])
+
+    # Desired row order (add other stats as needed)
+    row_order = ['dtype', 'count', 'unique', 'top', 'freq', 'mean', 'std', 'max', '75%', '50%', '25%', 'min']
+    # Only keep rows that exist in combined
+    row_order = [row for row in row_order if row in combined.index]
+    combined = combined.reindex(row_order)
+
+    # Estimate width: assume 12 chars per column (adjust as needed)
+    est_width = len(combined.columns) * 12
+    try:
+        term_width = os.get_terminal_size().columns
+    except OSError:
+        term_width = 80  # fallback if terminal size can't be determined
+
     print()
-    print(combined)
+    if est_width > term_width:
+        print(combined.T)
+        print(f"\nShape: {df.shape} | Output was transposed to fit on screen.")
+    else:
+        print(combined)
+        print(f"\nShape: {df.shape}")
+
 
 
 def load_dataset(file_path: str) -> pd.DataFrame:

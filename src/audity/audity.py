@@ -557,11 +557,10 @@ def box_plot(df: pd.DataFrame) -> None:
     headers = df.columns.tolist()
     x_header = questionary.select(
         "Select X header for box plot",
-        choices=headers + ["[Cancel]"]
+        choices=headers + ["[None]"]
     ).ask()
-    if x_header is None or x_header == "[Cancel]":
-        print("Box plot creation cancelled.")
-        return
+    if x_header == "[None]":
+        x_header = None
     
     y_header = questionary.select(
         "Select Y header for box plot",
@@ -570,9 +569,9 @@ def box_plot(df: pd.DataFrame) -> None:
     if y_header is None or y_header == "[Cancel]":
         print("Box plot creation cancelled.")
         return
-    if x_header not in df.columns or y_header not in df.columns:
-        print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No box plot will be created.")
-        return
+    # if x_header not in df.columns or y_header not in df.columns:
+    #     print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No box plot will be created.")
+    #     return
     
     legend = select_legend(df)
     if legend is not None:
@@ -583,11 +582,18 @@ def box_plot(df: pd.DataFrame) -> None:
     plt.figure(figsize=(10, 6))
     if legend:
         sns.boxplot(data=df, x=x_header, y=y_header, hue=legend)
-        plt.title(f"Box Plot: {y_header} by {x_header} with Legend: {legend}")
+        if x_header:
+            plt.title(f"Box Plot: {y_header} by {x_header} with Legend: {legend}")
+        else:
+            plt.title(f"Box Plot: {y_header} with Legend: {legend}")
     else:
         sns.boxplot(data=df, x=x_header, y=y_header)
-        plt.title(f"Box Plot: {y_header} by {x_header}")
-    plt.xlabel(x_header)
+        if x_header:
+            plt.title(f"Box Plot: {y_header} by {x_header}")
+        else:
+            plt.title(f"Box Plot: {y_header}")
+    if x_header is not None: 
+        plt.xlabel(x_header)
     plt.ylabel(y_header)
     plt.xticks(rotation=45)
     plt.grid(True)
@@ -602,11 +608,10 @@ def violin_plot(df: pd.DataFrame) -> None:
     headers = df.columns.tolist()
     x_header = questionary.select(
         "Select X header for violin plot",
-        choices=headers + ["[Cancel]"]
+        choices=headers + ["[None]"]
     ).ask()
-    if x_header is None or x_header == "[Cancel]":
-        print("Violin plot creation cancelled.")
-        return
+    if x_header == "[None]":
+        x_header = None
     
     y_header = questionary.select(
         "Select Y header for violin plot",
@@ -615,9 +620,9 @@ def violin_plot(df: pd.DataFrame) -> None:
     if y_header is None or y_header == "[Cancel]":
         print("Violin plot creation cancelled.")
         return
-    if x_header not in df.columns or y_header not in df.columns:
-        print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No violin plot will be created.")
-        return
+    # if x_header not in df.columns or y_header not in df.columns:
+    #     print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No violin plot will be created.")
+    #     return
     
     legend = select_legend(df)
     if legend is not None:
@@ -628,11 +633,18 @@ def violin_plot(df: pd.DataFrame) -> None:
     plt.figure(figsize=(10, 6))
     if legend:
         sns.violinplot(data=df, x=x_header, y=y_header, hue=legend)
-        plt.title(f"Violin Plot: {y_header} by {x_header} with Legend: {legend}")
+        if x_header:
+            plt.title(f"Violin Plot: {y_header} by {x_header} with Legend: {legend}")
+        else:
+            plt.title(f"Violin Plot: {y_header} with Legend: {legend}")
     else:
         sns.violinplot(data=df, x=x_header, y=y_header)
-        plt.title(f"Violin Plot: {y_header} by {x_header}")
-    plt.xlabel(x_header)
+        if x_header:
+            plt.title(f"Violin Plot: {y_header} by {x_header}")
+        else:
+            plt.title(f"Violin Plot: {y_header}")
+    if x_header is not None:
+        plt.xlabel(x_header)
     plt.ylabel(y_header)
     plt.xticks(rotation=45)
     plt.grid(True)

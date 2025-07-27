@@ -467,19 +467,23 @@ def line_plot(df) -> None:
         if legend not in df.columns:
             print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
             legend = None
-    
-    plt.figure(figsize=(10, 6))
-    if legend:
-        sns.lineplot(data=df, x=x_header, y=y_header, hue=legend)
-        plt.title(f"Line Plot: {y_header} vs {x_header} by {legend}")
-    else:
-        sns.lineplot(data=df, x=x_header, y=y_header)
-        plt.title(f"Line Plot: {y_header} vs {x_header}")
-    plt.xlabel(x_header)
-    plt.ylabel(y_header)
-    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
-    plt.grid(True)
-    plt.show()
+    try:
+        spinner.start("Creating line plot...")
+        plt.figure(figsize=(10, 6))
+        if legend:
+            sns.lineplot(data=df, x=x_header, y=y_header, hue=legend)
+            plt.title(f"Line Plot: {y_header} vs {x_header} by {legend}")
+        else:
+            sns.lineplot(data=df, x=x_header, y=y_header)
+            plt.title(f"Line Plot: {y_header} vs {x_header}")
+        plt.xlabel(x_header)
+        plt.ylabel(y_header)
+        plt.xticks(rotation=get_xtick_rotation(df[x_header]))
+        plt.grid(True)
+        spinner.succeed("Line plot created successfully. Close window to continue.")
+        plt.show()
+    except Exception as e:
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating line plot: {e}")
 
 
 def bar_plot(df) -> None:
@@ -496,19 +500,23 @@ def bar_plot(df) -> None:
         if legend not in df.columns:
             print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
             legend = None
-    
-    plt.figure(figsize=(10, 6))
-    if legend:
-        sns.barplot(data=df, x=x_header, y=y_header, hue=legend)
-        plt.title(f"Bar Plot: {y_header} vs {x_header} by {legend}")
-    else:
-        sns.barplot(data=df, x=x_header, y=y_header)
-        plt.title(f"Bar Plot: {y_header} vs {x_header}")
-    plt.xlabel(x_header)
-    plt.ylabel(y_header)
-    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
-    plt.grid(True)
-    plt.show()
+    try:
+        spinner.start("Creating bar plot...")
+        plt.figure(figsize=(10, 6))
+        if legend:
+            sns.barplot(data=df, x=x_header, y=y_header, hue=legend)
+            plt.title(f"Bar Plot: {y_header} vs {x_header} by {legend}")
+        else:
+            sns.barplot(data=df, x=x_header, y=y_header)
+            plt.title(f"Bar Plot: {y_header} vs {x_header}")
+        plt.xlabel(x_header)
+        plt.ylabel(y_header)
+        plt.xticks(rotation=get_xtick_rotation(df[x_header]))
+        plt.grid(True)
+        spinner.succeed("Bar plot created successfully. Close window to continue.")
+        plt.show()
+    except Exception as e:
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating bar plot: {e}")
 
 
 def scatter_plot(df) -> None:
@@ -525,19 +533,23 @@ def scatter_plot(df) -> None:
         if legend not in df.columns:
             print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
             legend = None
-    
-    plt.figure(figsize=(10, 6))
-    if legend:
-        sns.scatterplot(data=df, x=x_header, y=y_header, hue=legend)
-        plt.title(f"Scatter Plot: {y_header} vs {x_header} by {legend}")
-    else:
-        sns.scatterplot(data=df, x=x_header, y=y_header)
-        plt.title(f"Scatter Plot: {y_header} vs {x_header}")
-    plt.xlabel(x_header)
-    plt.ylabel(y_header)
-    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
-    plt.grid(True)
-    plt.show()
+    try:
+        spinner.start("Creating scatter plot...")
+        plt.figure(figsize=(10, 6))
+        if legend:
+            sns.scatterplot(data=df, x=x_header, y=y_header, hue=legend)
+            plt.title(f"Scatter Plot: {y_header} vs {x_header} by {legend}")
+        else:
+            sns.scatterplot(data=df, x=x_header, y=y_header)
+            plt.title(f"Scatter Plot: {y_header} vs {x_header}")
+        plt.xlabel(x_header)
+        plt.ylabel(y_header)
+        plt.xticks(rotation=get_xtick_rotation(df[x_header]))
+        plt.grid(True)
+        spinner.succeed("Scatter plot created successfully. Close window to continue.")
+        plt.show()
+    except Exception as e:
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating scatter plot: {e}")
 
 
 def pair_plot(df: pd.DataFrame) -> None:
@@ -550,6 +562,7 @@ def pair_plot(df: pd.DataFrame) -> None:
         if legend not in df.columns:
             print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
             legend = None
+    spinner.start("Creating pair plot...")
     try:
         if legend:
             sns.pairplot(df, hue=legend)
@@ -557,9 +570,10 @@ def pair_plot(df: pd.DataFrame) -> None:
         else:
             sns.pairplot(df)
             plt.suptitle("Pair Plot", y=1.02)  # Adjust title position
+        spinner.succeed("Pair plot created successfully. Close window to continue.")
         plt.show()
     except Exception as e:
-        print(f"{Fore.LIGHTYELLOW_EX}Error creating pair plot: {e}")
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating pair plot: {e}")
 
 
 def box_plot(df: pd.DataFrame) -> None:
@@ -591,26 +605,30 @@ def box_plot(df: pd.DataFrame) -> None:
         if legend not in df.columns:
             print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
             legend = None
-    
-    plt.figure(figsize=(10, 6))
-    if legend:
-        sns.boxplot(data=df, x=x_header, y=y_header, hue=legend)
-        if x_header:
-            plt.title(f"Box Plot: {y_header} by {x_header} with Legend: {legend}")
+    try:
+        spinner.start("Creating box plot...")
+        plt.figure(figsize=(10, 6))
+        if legend:
+            sns.boxplot(data=df, x=x_header, y=y_header, hue=legend)
+            if x_header:
+                plt.title(f"Box Plot: {y_header} by {x_header} with Legend: {legend}")
+            else:
+                plt.title(f"Box Plot: {y_header} with Legend: {legend}")
         else:
-            plt.title(f"Box Plot: {y_header} with Legend: {legend}")
-    else:
-        sns.boxplot(data=df, x=x_header, y=y_header)
-        if x_header:
-            plt.title(f"Box Plot: {y_header} by {x_header}")
-        else:
-            plt.title(f"Box Plot: {y_header}")
-    if x_header is not None: 
-        plt.xlabel(x_header)
-    plt.ylabel(y_header)
-    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
-    plt.grid(True)
-    plt.show()
+            sns.boxplot(data=df, x=x_header, y=y_header)
+            if x_header:
+                plt.title(f"Box Plot: {y_header} by {x_header}")
+            else:
+                plt.title(f"Box Plot: {y_header}")
+        if x_header is not None: 
+            plt.xlabel(x_header)
+        plt.ylabel(y_header)
+        plt.xticks(rotation=get_xtick_rotation(df[x_header]))
+        plt.grid(True)
+        spinner.succeed("Box plot created successfully. Close window to continue.")
+        plt.show()
+    except Exception as e:
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating box plot: {e}")
 
 
 def violin_plot(df: pd.DataFrame) -> None:
@@ -642,26 +660,30 @@ def violin_plot(df: pd.DataFrame) -> None:
         if legend not in df.columns:
             print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
             legend = None
-    
-    plt.figure(figsize=(10, 6))
-    if legend:
-        sns.violinplot(data=df, x=x_header, y=y_header, hue=legend)
-        if x_header:
-            plt.title(f"Violin Plot: {y_header} by {x_header} with Legend: {legend}")
+    try:
+        spinner.start("Creating violin plot...")
+        plt.figure(figsize=(10, 6))
+        if legend:
+            sns.violinplot(data=df, x=x_header, y=y_header, hue=legend)
+            if x_header:
+                plt.title(f"Violin Plot: {y_header} by {x_header} with Legend: {legend}")
+            else:
+                plt.title(f"Violin Plot: {y_header} with Legend: {legend}")
         else:
-            plt.title(f"Violin Plot: {y_header} with Legend: {legend}")
-    else:
-        sns.violinplot(data=df, x=x_header, y=y_header)
-        if x_header:
-            plt.title(f"Violin Plot: {y_header} by {x_header}")
-        else:
-            plt.title(f"Violin Plot: {y_header}")
-    if x_header is not None:
-        plt.xlabel(x_header)
-    plt.ylabel(y_header)
-    plt.xticks(rotation=get_xtick_rotation(df[x_header]))
-    plt.grid(True)
-    plt.show()
+            sns.violinplot(data=df, x=x_header, y=y_header)
+            if x_header:
+                plt.title(f"Violin Plot: {y_header} by {x_header}")
+            else:
+                plt.title(f"Violin Plot: {y_header}")
+        if x_header is not None:
+            plt.xlabel(x_header)
+        plt.ylabel(y_header)
+        plt.xticks(rotation=get_xtick_rotation(df[x_header]))
+        plt.grid(True)
+        spinner.succeed("Violin plot created successfully. Close window to continue.")
+        plt.show()
+    except Exception as e:
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating violin plot: {e}")
 
 
 def distribution_plot(df: pd.DataFrame) -> None:
@@ -688,6 +710,8 @@ def distribution_plot(df: pd.DataFrame) -> None:
         if legend not in df.columns:
             print(f"{Fore.LIGHTYELLOW_EX}Legend header '{legend}' does not exist. No legend will be used.")
             legend = None
+
+    spinner.start("Creating distribution plot...")
     try:
         if legend:
             g = sns.displot(df, x=x_header, hue=legend, kde=True, height=6, aspect=1.6)
@@ -697,9 +721,10 @@ def distribution_plot(df: pd.DataFrame) -> None:
             g.fig.suptitle(f"Distribution Plot: {x_header}", y=0.98)
         g.set_axis_labels(x_header, "Density")
         g.fig.tight_layout()  # Helps prevent title cutoff
+        spinner.succeed("Distribution plot created successfully. Close window to continue.")
         plt.show()
     except Exception as e:
-        print(f"{Fore.LIGHTYELLOW_EX}Error creating distribution plot: {e}")
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating distribution plot: {e}")
 
 
 def joint_grid_plot(df: pd.DataFrame) -> None:
@@ -724,12 +749,17 @@ def joint_grid_plot(df: pd.DataFrame) -> None:
     if x_header not in df.columns or y_header not in df.columns:
         print(f"{Fore.LIGHTYELLOW_EX}Selected headers do not exist in the DataFrame. No joint grid plot will be created.")
         return
-    g = sns.jointplot(data=df, x=x_header, y=y_header, kind="hist", height=8)
-    g.plot_joint(sns.histplot, cmap=sns.dark_palette("#69d", reverse=True, as_cmap=True), cbar=True)
-    g.plot_marginals(sns.histplot, element="step")
-    g.figure.suptitle(f"Joint Grid Plot: {y_header} vs {x_header}", y=1.02)  # Adjust title position
-    g.set_axis_labels(x_header, y_header)
-    plt.show()
+    try:
+        spinner.start("Creating joint grid plot...")
+        g = sns.jointplot(data=df, x=x_header, y=y_header, kind="hist", height=8)
+        g.plot_joint(sns.histplot, cmap=sns.dark_palette("#69d", reverse=True, as_cmap=True), cbar=True)
+        g.plot_marginals(sns.histplot, element="step")
+        g.figure.suptitle(f"Joint Grid Plot: {y_header} vs {x_header}", y=1.02)  # Adjust title position
+        g.set_axis_labels(x_header, y_header)
+        spinner.succeed("Joint grid plot created successfully. Close window to continue.")
+        plt.show()
+    except Exception as e:
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating joint grid plot: {e}")
 
 
 def relation_plot(df: pd.DataFrame) -> None:
@@ -768,21 +798,26 @@ def relation_plot(df: pd.DataFrame) -> None:
     elif size_header not in df.columns:
         print(f"{Fore.LIGHTYELLOW_EX}Size header '{size_header}' does not exist. No size will be used.")
         size_header = None
-    sns.relplot(
-        data=df,
-        x=x_header,
-        y=y_header,
-        hue=legend,
-        size=size_header,
-        kind="scatter",
-        height=6,
-        aspect=1.6
-    )
-    plt.title(f"Relation Plot: {y_header} vs {x_header}" + (f" by {legend}" if legend else ""))
-    plt.xlabel(x_header)
-    plt.ylabel(y_header)
-    plt.grid(True)
-    plt.show()
+    try:
+        spinner.start("Creating relation plot...")
+        sns.relplot(
+            data=df,
+            x=x_header,
+            y=y_header,
+            hue=legend,
+            size=size_header,
+            kind="scatter",
+            height=6,
+            aspect=1.6
+        )
+        plt.title(f"Relation Plot: {y_header} vs {x_header}" + (f" by {legend}" if legend else ""))
+        plt.xlabel(x_header)
+        plt.ylabel(y_header)
+        plt.grid(True)
+        spinner.succeed("Relation plot created successfully. Close window to continue.")
+        plt.show()
+    except Exception as e:
+        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating relation plot: {e}")
 
 
 #endregion: plotting functions

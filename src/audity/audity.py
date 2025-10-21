@@ -898,7 +898,7 @@ def audity(df: pd.DataFrame) -> None:
         "Scatter Plot",
         "Joint Grid Plot",
         "Relation Plot",
-        "Facet Plot"
+        "Facet Plot",
         "Pair Plot",
         "Exit"
     ]

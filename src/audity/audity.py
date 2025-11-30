@@ -609,6 +609,28 @@ def pair_plot(df: pd.DataFrame) -> None:
     Create a pair plot for the DataFrame.
     This function uses seaborn's pairplot to visualize pairwise relationships in the dataset.
     """
+    # Check if there are too many numeric columns
+    numerical_threshold = 6
+    numerical_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    if len(numerical_cols) > numerical_threshold:
+        numerical_col_subset = questionary.checkbox(
+            f"There are {len(numerical_cols)} numeric columns which may clutter the plot. Anything over {numerical_threshold} is not recommended.\nPlease verify which columns to render:",
+            choices = numerical_cols
+        ).ask()
+        if numerical_col_subset is None or len(numerical_col_subset) < 2:
+            user = questionary.confirm(
+                "Not enough columns selected. Do you want to use all the columns instead?",
+                default=False
+            ).ask()
+            if user is None or user is False:
+                print("Pair plot creation cancelled.")
+                return
+        else:
+            # Find columns that were not selected and drop them
+            cols_to_drop = list(set(numerical_cols) - set(numerical_col_subset))
+            if cols_to_drop:
+                df = df.drop(columns=cols_to_drop)
+
     legend = select_legend(df)
     if legend is not None:
         if legend not in df.columns:

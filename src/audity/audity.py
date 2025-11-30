@@ -352,6 +352,55 @@ def remove_outliers_IQR(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def melt_columns(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Melt (un-pivot) columns into long format.
+    This function asks the user to select 2 or more columns to melt.
+    The dataset is then expanded into long format which replaces the selected columns with 2 new columns.
+        1. A new column that contains the selected column names as categorical values.
+        2. A new column that contains the corresponding values from the selected columns.
+    The user is prompted to name the new columns prior to melting.
+    '''
+    columns_to_melt = questionary.checkbox(
+        "Select at least 2 columns to melt",
+        choices=[{'name': col} for col in df.columns]
+    ).ask()
+    if columns_to_melt is None or len(columns_to_melt) < 2:
+        print(f"{Fore.LIGHTYELLOW_EX}At least 2 columns must be selected to melt. Operation cancelled.")
+        return df
+    
+    new_category_name = questionary.text(
+        "Enter name for the new column that will contain the melted column names:"
+    ).ask()
+    if new_category_name is None or new_category_name.strip() == "":
+        print(f"{Fore.LIGHTYELLOW_EX}New column name cannot be empty. Operation cancelled.")
+        return df
+    new_category_name = new_category_name.strip()
+
+    new_value_name = questionary.text(
+        "Enter name for the new column that will contain the melted values:"
+    ).ask()
+    if new_value_name is None or new_value_name.strip() == "":
+        print(f"{Fore.LIGHTYELLOW_EX}New column name cannot be empty. Operation cancelled.")
+        return df
+    new_value_name = new_value_name.strip()
+
+    # Melt the dataframe
+    try:
+        df_melted = pd.melt(
+            df,
+            value_vars=columns_to_melt,
+            var_name=new_category_name,
+            value_name=new_value_name
+        )
+        print(f"{Fore.GREEN}Melted {len(columns_to_melt)} columns into long format.")
+        return df_melted
+    except Exception as e:
+        print(f"{Back.LIGHTYELLOW_EX}{Fore.BLACK}Error melting columns:{Style.RESET_ALL}\n{Fore.LIGHTYELLOW_EX}{e}")
+        return df
+    
+
+
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     def exit_prompt():
         answer = questionary.confirm(
@@ -372,6 +421,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
                 "Edit header name",
                 "Change header type",
                 "Delete header",
+                "Melt columns (un-pivot into long format)",
                 "Remove duplicates",
                 "Remove missing values",
                 "Remove outliers (IQR method)",
@@ -390,6 +440,8 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
             df = header_type_change(df)
         elif user == "Delete header":
             df = header_delete(df)
+        elif user == "Melt columns (un-pivot into long format)":
+            df = melt_columns(df)
         elif user == "Remove duplicates":
             df = remove_duplicates(df)
         elif user == "Remove missing values":

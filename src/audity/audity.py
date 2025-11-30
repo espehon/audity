@@ -404,7 +404,7 @@ def melt_columns(df: pd.DataFrame) -> pd.DataFrame:
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     def exit_prompt():
         answer = questionary.confirm(
-                "Do you want to exit the header editing mode?",
+                "Do you want to exit editing mode?",
                 default=True
             ).ask()
         return answer
@@ -429,9 +429,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
             ]
         ).ask()
         if user is None or user == "[Done] Finish editing":
-            if exit_prompt():
-                edit_mode = False
-            continue
+            edit_mode = False
         if user == "Sample dataset":
             print_sample_with_dtypes(df)
         elif user == "Edit header name":

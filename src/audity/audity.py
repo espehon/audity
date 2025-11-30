@@ -820,50 +820,7 @@ def relation_plot(df: pd.DataFrame) -> None:
         spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating relation plot: {e}")
 
 
-def facet_plot(df: pd.DataFrame) -> None:
-    """
-    Crate scatter plots that 'facet' with x and/or y categories.
-    """
-    x_header = questionary.select(
-        "Select X axis",
-        choices = df.columns.tolist() + ["[Cancel]"]
-    )
-    if x_header is None or x_header == "[Cancel]":
-        print("Operation cancelled.")
-        return
-    y_header = questionary.select(
-        "Select Y axis",
-        choices = df.columns.tolist() + ["[Cancel]"]
-    )
-    if y_header is None or y_header == "[Cancel]":
-        print("Operation cancelled.")
-        return
 
-    x_faucet = questionary.select(
-        "Select X facet category (optional)",
-        choices = df.select_dtypes(include=['object', 'category']).columns.tolist() + ["[None]"]
-    )
-    y_faucet = questionary.select(
-        "Select Y facet category (optional)",
-        choices = df.select_dtypes(include=['object', 'category']).columns.tolist() + ["[None]"]
-    )
-
-    try:
-        spinner.start("Creating facet plot...")
-        g = sns.FacetGrid(
-            df,
-            col=x_faucet if x_faucet != "[None]" else None,
-            row=y_faucet if y_faucet != "[None]" else None,
-            height=4,
-            aspect=1.2
-        )
-        g.map_dataframe(sns.scatterplot, x=x_header, y=y_header)
-        g.set_axis_labels(x_header, y_header)
-        g.figure.suptitle(f"Facet Plot: {y_header} vs {x_header}", y=1.02)  # Adjust title position
-        spinner.succeed("Facet plot created successfully. Close window to continue.")
-        plt.show()
-    except Exception as e:
-        spinner.fail(f"{Fore.LIGHTYELLOW_EX}Error creating facet plot: {e}")
 
 
 
@@ -898,7 +855,7 @@ def audity(df: pd.DataFrame) -> None:
         "Scatter Plot",
         "Joint Grid Plot",
         "Relation Plot",
-        "Facet Plot",
+        # "Facet Plot",
         "Pair Plot",
         "Exit"
     ]
@@ -946,8 +903,8 @@ def audity(df: pd.DataFrame) -> None:
             joint_grid_plot(df)
         elif user == "Relation Plot":
             relation_plot(df)
-        elif user == "Facet Plot":
-            facet_plot(df)
+        # elif user == "Facet Plot":
+        #     facet_plot(df)
 
         else:
             print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")

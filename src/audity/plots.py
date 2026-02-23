@@ -63,8 +63,15 @@ def line_plot(df: pd.DataFrame) -> None:
     if x_header is None or y_header is None:
         print("Line plot creation cancelled.")
         return
-    # mypy/pylance don't always infer non-None after the early return
     assert x_header is not None and y_header is not None
+
+    # Handle non-numeric Y by aggregating counts
+    plot_df = df
+    is_count_plot = False
+    if not pd.api.types.is_numeric_dtype(df[y_header]):
+        is_count_plot = True
+        plot_df = df.groupby(x_header).size().reset_index(name='count')
+        y_header = 'count'
 
     legend = select_legend(df)
     spinner = _make_spinner("Creating line plot...")
@@ -72,14 +79,20 @@ def line_plot(df: pd.DataFrame) -> None:
         spinner.start()
         plt.figure(figsize=(10, 6))
         if legend:
-            sns.lineplot(data=df, x=x_header, y=y_header, hue=legend)
-            plt.title(f"Line Plot: {y_header} vs {x_header} by {legend}")
+            sns.lineplot(data=plot_df, x=x_header, y=y_header, hue=legend)
+            title = f"Line Plot: {y_header} vs {x_header} by {legend}"
+            if is_count_plot:
+                title += " (count)"
+            plt.title(title)
         else:
-            sns.lineplot(data=df, x=x_header, y=y_header)
-            plt.title(f"Line Plot: {y_header} vs {x_header}")
+            sns.lineplot(data=plot_df, x=x_header, y=y_header)
+            title = f"Line Plot: {y_header} vs {x_header}"
+            if is_count_plot:
+                title += " (count)"
+            plt.title(title)
         plt.xlabel(x_header)
         plt.ylabel(y_header)
-        plt.xticks(rotation=get_xtick_rotation(df[x_header]))
+        plt.xticks(rotation=get_xtick_rotation(plot_df[x_header]))
         spinner.succeed("Line plot created successfully. Close window to continue.")
         _safe_show()
     except Exception as e:
@@ -93,20 +106,34 @@ def bar_plot(df: pd.DataFrame) -> None:
         return
     assert x_header is not None and y_header is not None
 
+    # Handle non-numeric Y by aggregating counts
+    plot_df = df
+    is_count_plot = False
+    if not pd.api.types.is_numeric_dtype(df[y_header]):
+        is_count_plot = True
+        plot_df = df.groupby(x_header).size().reset_index(name='count')
+        y_header = 'count'
+
     legend = select_legend(df)
     spinner = _make_spinner("Creating bar plot...")
     try:
         spinner.start()
         plt.figure(figsize=(10, 6))
         if legend:
-            sns.barplot(data=df, x=x_header, y=y_header, hue=legend)
-            plt.title(f"Bar Plot: {y_header} vs {x_header} by {legend}")
+            sns.barplot(data=plot_df, x=x_header, y=y_header, hue=legend)
+            title = f"Bar Plot: {y_header} vs {x_header} by {legend}"
+            if is_count_plot:
+                title += " (count)"
+            plt.title(title)
         else:
-            sns.barplot(data=df, x=x_header, y=y_header)
-            plt.title(f"Bar Plot: {y_header} vs {x_header}")
+            sns.barplot(data=plot_df, x=x_header, y=y_header)
+            title = f"Bar Plot: {y_header} vs {x_header}"
+            if is_count_plot:
+                title += " (count)"
+            plt.title(title)
         plt.xlabel(x_header)
         plt.ylabel(y_header)
-        plt.xticks(rotation=get_xtick_rotation(df[x_header]))
+        plt.xticks(rotation=get_xtick_rotation(plot_df[x_header]))
         spinner.succeed("Bar plot created successfully. Close window to continue.")
         _safe_show()
     except Exception as e:
@@ -252,25 +279,45 @@ def violin_plot(df: pd.DataFrame) -> None:
 def distribution_plot(df: pd.DataFrame) -> None:
     x_header = questionary.select(
         "Select header for distribution plot",
-        choices=df.select_dtypes(include=[np.number]).columns.tolist() + ["[Cancel]"],
+        choices=df.columns.tolist() + ["[Cancel]"],
     ).ask()
     if x_header is None or x_header == "[Cancel]":
         print("Distribution plot creation cancelled.")
         return
-    legend = select_legend(df)
+    
+    # Handle non-numeric columns by counting frequencies
+    plot_df = df
+    is_count_plot = False
+    if not pd.api.types.is_numeric_dtype(df[x_header]):
+        is_count_plot = True
+        plot_df = df[x_header].value_counts().reset_index()
+        plot_df.columns = [x_header, 'count']
+        plot_df = plot_df.sort_values(x_header)
+    
+    legend = select_legend(df) if not is_count_plot else None
     spinner = _make_spinner("Creating distribution plot...")
     try:
         spinner.start()
-        if legend:
-            g = sns.displot(df, x=x_header, hue=legend, kde=True, height=6, aspect=1.6)
-            g.fig.suptitle(f"Distribution Plot: {x_header} by {legend}", y=0.98)
+        if is_count_plot:
+            plt.figure(figsize=(10, 6))
+            plt.bar(plot_df[x_header], plot_df['count'])
+            plt.title(f"Distribution Plot: {x_header} (count)")
+            plt.xlabel(x_header)
+            plt.ylabel("Count")
+            plt.xticks(rotation=get_xtick_rotation(plot_df[x_header]))
+            spinner.succeed("Distribution plot created successfully. Close window to continue.")
+            plt.show()
         else:
-            g = sns.displot(df[x_header], kde=True, height=6, aspect=1.6)
-            g.fig.suptitle(f"Distribution Plot: {x_header}", y=0.98)
-        g.set_axis_labels(x_header, "Density")
-        g.fig.tight_layout()
-        spinner.succeed("Distribution plot created successfully. Close window to continue.")
-        plt.show()
+            if legend:
+                g = sns.displot(df, x=x_header, hue=legend, kde=True, height=6, aspect=1.6)
+                g.fig.suptitle(f"Distribution Plot: {x_header} by {legend}", y=0.98)
+            else:
+                g = sns.displot(df[x_header], kde=True, height=6, aspect=1.6)
+                g.fig.suptitle(f"Distribution Plot: {x_header}", y=0.98)
+            g.set_axis_labels(x_header, "Density")
+            g.fig.tight_layout()
+            spinner.succeed("Distribution plot created successfully. Close window to continue.")
+            plt.show()
     except Exception as e:
         spinner.fail(f"{e}")
 

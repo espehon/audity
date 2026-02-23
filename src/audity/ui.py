@@ -45,6 +45,13 @@ def select_axis_headers(
 
     headers: List[str] = df.columns.tolist()
 
+    # Display DataFrame context
+    print(f"\n{Fore.CYAN}Available columns ({len(headers)}):")
+    for col in headers:
+        dtype = df[col].dtype
+        print(f"  • {col}: {dtype}")
+    print()
+
     def _make_choices(allow_none: bool) -> List[str]:
         choices = headers.copy()
         if allow_none:
@@ -104,6 +111,13 @@ def select_legend(
             col for col in headers
             if df[col].dtype == "object" or df[col].dtype.name == "category"
         ]
+    
+    # Display available legend options
+    print(f"\n{Fore.CYAN}Available legend columns ({len(headers)}):")
+    for col in headers:
+        print(f"  • {col}")
+    print()
+    
     if allow_none:
         headers.append("[None]")
     choice = questionary.select("Select legend header", choices=headers + ["[Cancel]"]).ask()
@@ -126,6 +140,13 @@ def select_size(
     headers: List[str] = df.columns.tolist()
     if numeric_only:
         headers = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    # Display available size columns
+    print(f"\n{Fore.CYAN}Available size columns ({len(headers)}):")
+    for col in headers:
+        print(f"  • {col}")
+    print()
+    
     if allow_none:
         headers.append("[None]")
     choice = questionary.select("Select size header", choices=headers + ["[Cancel]"]).ask()

@@ -45,13 +45,6 @@ def select_axis_headers(
 
     headers: List[str] = df.columns.tolist()
 
-    # Display DataFrame context
-    print(f"\n{Fore.CYAN}Available columns ({len(headers)}):")
-    for col in headers:
-        dtype = df[col].dtype
-        print(f"  • {col}: {dtype}")
-    print()
-
     def _make_choices(allow_none: bool) -> List[str]:
         choices = headers.copy()
         if allow_none:

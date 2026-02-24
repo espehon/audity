@@ -213,3 +213,36 @@ def get_xtick_rotation(x_values, max_labels: int = 10, max_label_len: int = 8) -
     if len(unique) > max_labels or any(len(str(l)) > max_label_len for l in unique):
         return 45
     return 0
+
+
+def select_chart_types(
+    available_charts: List[str],
+    prompt: str = "Select chart types to display (use Space to select, Enter to confirm)"
+) -> Optional[List[str]]:
+    """Ask the user to multi-select from available chart types.
+
+    Parameters:
+    * ``available_charts``: List of chart type names to choose from
+    * ``prompt``: The prompt text to display to the user
+
+    Returns a list of selected chart types, or None if cancelled.
+    """
+    
+    choices = available_charts.copy()
+    choices.append("[Cancel]")
+    
+    selected = questionary.checkbox(
+        prompt,
+        choices=choices
+    ).ask()
+    
+    if selected is None or "[Cancel]" in selected:
+        return None
+    
+    # Remove [Cancel] if it somehow got selected
+    selected = [item for item in selected if item != "[Cancel]"]
+    
+    if not selected:
+        return None
+    
+    return selected

@@ -470,12 +470,46 @@ from .plots import (
     distribution_plot,
     joint_grid_plot,
     relation_plot,
+    delta_chart_single_column,
 )
 
 
 
 
 
+
+
+def delta_analysis_menu(df: pd.DataFrame) -> None:
+    """
+    Delta Analysis submenu loop.
+    User can choose from various delta analysis options.
+    """
+    while True:
+        print()
+        user = questionary.select(
+            "Delta Analysis - Choose an option:",
+            choices=[
+                "Single Column Analysis",
+                "Return to Main Menu"
+            ]
+        ).ask()
+        
+        if user is None:
+            user = questionary.confirm(
+                "Do you want to return to main menu?",
+                default=True
+            ).ask()
+            if user:
+                break
+            continue
+        
+        if user == "Return to Main Menu":
+            break
+        elif user == "Single Column Analysis":
+            delta_chart_single_column(df)
+        else:
+            print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")
+            continue
 
 
 def audity(df: pd.DataFrame) -> None:
@@ -503,6 +537,7 @@ def audity(df: pd.DataFrame) -> None:
         "Relation Plot",
         # "Facet Plot",
         "Pair Plot",
+        "Delta Analysis Menu",
         "Exit"
     ]
 
@@ -551,6 +586,8 @@ def audity(df: pd.DataFrame) -> None:
             relation_plot(df)
         # elif user == "Facet Plot":
         #     facet_plot(df)
+        elif user == "Delta Analysis Menu":
+            delta_analysis_menu(df) 
 
         else:
             print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")

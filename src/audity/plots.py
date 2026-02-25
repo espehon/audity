@@ -12,6 +12,7 @@ makes it easy to add new plot types without duplicating UI code.
 
 from __future__ import annotations
 
+from typing import Optional
 
 import pandas as pd
 import numpy as np
@@ -78,6 +79,75 @@ def _format_large_number(value: float) -> str:
         if value == int(value):
             return str(int(value))
         return f"{value:.1f}"
+
+
+def _get_top_bottom_n(category_order: list, num_categories: int) -> Optional[list]:
+    """Filter categories to show top N and bottom N separately.
+    
+    Args:
+        category_order: List of categories sorted by performance (best to worst)
+        num_categories: Total number of categories
+        
+    Returns:
+        Filtered category_order list with top N and bottom N selected by user,
+        or original list if user enters 0, or None if cancelled
+    """
+    top_n = questionary.text(
+        f"Show top N categories (best performers)? (0 = none): ",
+        default="0"
+    ).ask()
+    
+    if top_n is None:
+        return None
+    
+    try:
+        top_n = int(top_n)
+        if top_n < 0:
+            print("Invalid input. Must be >= 0.")
+            return category_order
+    except ValueError:
+        print("Invalid input. Showing all categories.")
+        return category_order
+    
+    bottom_n = questionary.text(
+        f"Show bottom N categories (worst performers)? (0 = none): ",
+        default="0"
+    ).ask()
+    
+    if bottom_n is None:
+        return None
+    
+    try:
+        bottom_n = int(bottom_n)
+        if bottom_n < 0:
+            print("Invalid input. Must be >= 0.")
+            return category_order
+    except ValueError:
+        print("Invalid input. Showing all categories.")
+        return category_order
+    
+    # If both are 0, show all
+    if top_n == 0 and bottom_n == 0:
+        return category_order
+    
+    # Build filtered list
+    filtered_order = []
+    
+    if top_n > 0:
+        filtered_order.extend(category_order[:top_n])
+    
+    if bottom_n > 0:
+        filtered_order.extend(category_order[-bottom_n:])
+    
+    # Remove duplicates while preserving order (in case top_n and bottom_n overlap)
+    seen = set()
+    result = []
+    for cat in filtered_order:
+        if cat not in seen:
+            seen.add(cat)
+            result.append(cat)
+    
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -550,26 +620,16 @@ def delta_chart_single_column(df: pd.DataFrame) -> None:
         
         # If more than 10 categories, ask user if they want to filter
         if len(category_order) > 10:
-            filter_response = questionary.text(
-                f"{len(category_order)} categories detected. Show top/bottom N (0 = all):",
-                default="5"
-            ).ask()
+            filtered_order = _get_top_bottom_n(category_order, len(category_order))
             
-            if filter_response is None:
+            if filtered_order is None:
                 print("Delta chart creation cancelled.")
                 return
             
-            try:
-                n = int(filter_response)
-                if n > 0:
-                    # Keep top N (highest) and bottom N (lowest)
-                    top_n = category_order[:n]
-                    bottom_n = category_order[-n:]
-                    category_order = top_n + bottom_n
-                    # Re-filter the dataframe to only include these categories
-                    df = df[df[category_col].isin(category_order)]
-            except ValueError:
-                print("Invalid input. Showing all categories.")
+            if len(filtered_order) < len(category_order):
+                category_order = filtered_order
+                # Re-filter the dataframe to only include these categories
+                df = df[df[category_col].isin(category_order)]
         
         spinner = _make_spinner("Creating delta analysis chart...")
         try:
@@ -725,6 +785,38 @@ def delta_chart_winners(df: pd.DataFrame) -> None:
             return
         
         higher_is_better = criteria == "Higher is better"
+        
+        # Calculate category order for potential filtering
+        # Temporary calculation to determine if filtering is needed
+        if higher_is_better:
+            df_temp = df.copy()
+            df_temp['_winner_col'] = df_temp[delta_cols].idxmax(axis=1)
+            df_temp['_winner_value'] = df_temp[delta_cols].max(axis=1)
+        else:
+            df_temp = df.copy()
+            df_temp['_winner_col'] = df_temp[delta_cols].idxmin(axis=1)
+            df_temp['_winner_value'] = df_temp[delta_cols].min(axis=1)
+        
+        winners_by_category = df_temp.groupby(category_col)['_winner_value'].sum().sort_values(ascending=False)
+        
+        if higher_is_better:
+            winners_by_category = winners_by_category[winners_by_category > 0]
+        else:
+            winners_by_category = winners_by_category[winners_by_category < 0]
+        
+        temp_category_order = winners_by_category.index.tolist()
+        
+        # If more than 10 categories, ask user if they want to filter
+        if len(temp_category_order) > 10:
+            filtered_order = _get_top_bottom_n(temp_category_order, len(temp_category_order))
+            
+            if filtered_order is None:
+                print("Winners chart creation cancelled.")
+                return
+            
+            if len(filtered_order) < len(temp_category_order):
+                # Re-filter the dataframe to only include these categories
+                df = df[df[category_col].isin(filtered_order)]
         
         spinner = _make_spinner("Creating winners analysis chart...")
         try:
@@ -1002,26 +1094,16 @@ def delta_chart_multiple_columns(df: pd.DataFrame) -> None:
         
         # If more than 10 categories, ask user if they want to filter
         if len(category_order) > 10:
-            filter_response = questionary.text(
-                f"{len(category_order)} categories detected. Show top/bottom N (0 = all):",
-                default="5"
-            ).ask()
+            filtered_order = _get_top_bottom_n(category_order, len(category_order))
             
-            if filter_response is None:
+            if filtered_order is None:
                 print("Delta chart creation cancelled.")
                 return
             
-            try:
-                n = int(filter_response)
-                if n > 0:
-                    # Keep top N (highest) and bottom N (lowest)
-                    top_n = category_order[:n]
-                    bottom_n = category_order[-n:]
-                    category_order = top_n + bottom_n
-                    # Re-filter the dataframe to only include these categories
-                    df = df[df[category_col].isin(category_order)]
-            except ValueError:
-                print("Invalid input. Showing all categories.")
+            if len(filtered_order) < len(category_order):
+                category_order = filtered_order
+                # Re-filter the dataframe to only include these categories
+                df = df[df[category_col].isin(category_order)]
         
         
         spinner = _make_spinner("Creating multi-column delta analysis chart...")

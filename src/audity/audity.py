@@ -421,6 +421,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
                 "Edit header name",
                 "Change header type",
                 "Delete header",
+                "Filter column",
                 "Melt columns (un-pivot into long format)",
                 "Remove duplicates",
                 "Remove missing values",
@@ -438,6 +439,8 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
             df = header_type_change(df)
         elif user == "Delete header":
             df = header_delete(df)
+        elif user == "Filter column":
+            df = filter_column(df)
         elif user == "Melt columns (un-pivot into long format)":
             df = melt_columns(df)
         elif user == "Remove duplicates":
@@ -459,6 +462,7 @@ from .ui import (
     select_legend,
     get_xtick_rotation,
     select_size,
+    filter_column,
 )
 from .plots import (
     line_plot,

@@ -49,7 +49,7 @@ def select_axis_headers(
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     categorical_cols = [
         col for col in all_headers
-        if df[col].dtype == "object" or df[col].dtype.name == "category"
+        if df[col].dtype == "object" or df[col].dtype.name in ("category", "string")
     ]
 
     def _get_filtered_headers(col_type: Literal["numeric", "categorical", "any"]) -> List[str]:
@@ -119,7 +119,7 @@ def select_legend(
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     categorical_cols = [
         col for col in all_headers
-        if df[col].dtype == "object" or df[col].dtype.name == "category"
+        if df[col].dtype == "object" or df[col].dtype.name in ("category", "string")
     ]
 
     def _get_filtered_headers(c_type: Literal["numeric", "categorical", "any"]) -> List[str]:
@@ -166,7 +166,7 @@ def select_size(
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     categorical_cols = [
         col for col in all_headers
-        if df[col].dtype == "object" or df[col].dtype.name == "category"
+        if df[col].dtype == "object" or df[col].dtype.name in ("category", "string")
     ]
 
     def _get_filtered_headers(c_type: Literal["numeric", "categorical", "any"]) -> List[str]:
@@ -246,3 +246,216 @@ def select_chart_types(
         return None
     
     return selected
+
+
+def filter_column(df: pd.DataFrame) -> pd.DataFrame:
+    """Filter rows in a DataFrame by a specific column's values.
+    
+    Supports different filtering methods based on column dtype:
+    - Numeric: comparison operators (>, <=)
+    - Datetime: date range syntax (yyyy-mm-dd)
+    - Categorical/String/Object: list format or checkbox selection
+    
+    Returns the filtered DataFrame, or the original if cancelled.
+    """
+    
+    all_headers: List[str] = df.columns.tolist()
+    
+    # Select which column to filter
+    column = questionary.select(
+        "Select column to filter:",
+        choices=all_headers + ["[Cancel]"]
+    ).ask()
+    
+    if column is None or column == "[Cancel]":
+        return df
+    
+    col_dtype = df[column].dtype
+    
+    # Determine column type
+    is_numeric = pd.api.types.is_numeric_dtype(col_dtype)
+    is_datetime = pd.api.types.is_datetime64_any_dtype(col_dtype)
+    is_categorical = (col_dtype == "object" or 
+                      col_dtype.name in ("category", "string"))
+    
+    try:
+        if is_numeric:
+            return _filter_numeric(df, column)
+        elif is_datetime:
+            return _filter_datetime(df, column)
+        elif is_categorical:
+            return _filter_categorical(df, column)
+        else:
+            print(f"{Fore.LIGHTYELLOW_EX}Unsupported column type: {col_dtype}")
+            return df
+    except Exception as e:
+        print(f"{Fore.LIGHTYELLOW_EX}Error filtering column: {e}")
+        return df
+
+
+def _filter_numeric(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Filter numeric column using > or <= operators."""
+    
+    print(f"\n{Fore.CYAN}Filter {column} (numeric)")
+    print("Examples: '>100', '<=50.5', '<0'")
+    
+    filter_expr = questionary.text(
+        "Enter filter expression (operator followed by value):",
+        validate=lambda text: _validate_numeric_filter(text) or "Invalid format"
+    ).ask()
+    
+    if filter_expr is None or filter_expr.strip() == "":
+        return df
+    
+    filter_expr = filter_expr.strip()
+    
+    # Parse operator and value
+    if filter_expr.startswith("<="):
+        operator = "<="
+        value = float(filter_expr[2:].strip())
+        mask = df[column] <= value
+    elif filter_expr.startswith("<"):
+        operator = "<"
+        value = float(filter_expr[1:].strip())
+        mask = df[column] < value
+    elif filter_expr.startswith(">="):
+        operator = ">="
+        value = float(filter_expr[2:].strip())
+        mask = df[column] >= value
+    elif filter_expr.startswith(">"):
+        operator = ">"
+        value = float(filter_expr[1:].strip())
+        mask = df[column] > value
+    elif filter_expr.startswith("=="):
+        operator = "=="
+        value = float(filter_expr[2:].strip())
+        mask = df[column] == value
+    else:
+        raise ValueError("Invalid operator. Use >, >=, <, <=, or ==")
+    
+    result = df[mask]
+    print(f"{Fore.LIGHTGREEN_EX}Filtered: {len(result)} rows remaining (removed {len(df) - len(result)} rows)")
+    return result
+
+
+def _filter_datetime(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Filter datetime column using date range syntax."""
+    
+    print(f"\n{Fore.CYAN}Filter {column} (datetime)")
+    print("Examples: '>2024-01-15', '<=2024-12-31', '==2024-06-01'")
+    
+    filter_expr = questionary.text(
+        "Enter filter expression (operator followed by date in yyyy-mm-dd format):",
+    ).ask()
+    
+    if filter_expr is None or filter_expr.strip() == "":
+        return df
+    
+    filter_expr = filter_expr.strip()
+    
+    try:
+        # Parse operator and date
+        if filter_expr.startswith("<="):
+            operator = "<="
+            date_str = filter_expr[2:].strip()
+            date_val = pd.to_datetime(date_str)
+            mask = df[column] <= date_val
+        elif filter_expr.startswith("<"):
+            operator = "<"
+            date_str = filter_expr[1:].strip()
+            date_val = pd.to_datetime(date_str)
+            mask = df[column] < date_val
+        elif filter_expr.startswith(">="):
+            operator = ">="
+            date_str = filter_expr[2:].strip()
+            date_val = pd.to_datetime(date_str)
+            mask = df[column] >= date_val
+        elif filter_expr.startswith(">"):
+            operator = ">"
+            date_str = filter_expr[1:].strip()
+            date_val = pd.to_datetime(date_str)
+            mask = df[column] > date_val
+        elif filter_expr.startswith("=="):
+            operator = "=="
+            date_str = filter_expr[2:].strip()
+            date_val = pd.to_datetime(date_str)
+            mask = df[column] == date_val
+        else:
+            raise ValueError("Invalid operator. Use >, >=, <, <=, or ==")
+        
+        result = df[mask]
+        print(f"{Fore.LIGHTGREEN_EX}Filtered: {len(result)} rows remaining (removed {len(df) - len(result)} rows)")
+        return result
+    except Exception as e:
+        print(f"{Fore.LIGHTYELLOW_EX}Error parsing date: {e}")
+        return df
+
+
+def _filter_categorical(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Filter categorical/string/object column."""
+    
+    unique_vals = df[column].unique()
+    num_unique = len(unique_vals)
+    
+    print(f"\n{Fore.CYAN}Filter {column} (categorical, {num_unique} unique values)")
+    
+    # If 33 or fewer unique values, offer checkbox selection
+    if num_unique <= 32:
+        print("Select values to KEEP:")
+        selected = questionary.checkbox(
+            "Choose values (use Space to select, Enter to confirm):",
+            choices=[str(val) for val in sorted(unique_vals)] + ["[Cancel]"]
+        ).ask()
+        
+        if selected is None or "[Cancel]" in selected:
+            return df
+        
+        selected = [val for val in selected if val != "[Cancel]"]
+        
+        if not selected:
+            return df
+        
+        # Convert back to original dtype for comparison
+        mask = df[column].astype(str).isin(selected)
+    else:
+        # Use list format for many unique values
+        print(f"Too many unique values ({num_unique}) for checkbox. Use list format.")
+        print("Example: 'A, B, C' or 'value1, value2'")
+        
+        list_input = questionary.text(
+            "Enter values to KEEP (comma-separated):"
+        ).ask()
+        
+        if list_input is None or list_input.strip() == "":
+            return df
+        
+        # Parse comma-separated list
+        values_to_keep = [v.strip() for v in list_input.split(",")]
+        mask = df[column].astype(str).isin(values_to_keep)
+    
+    result = df[mask]
+    print(f"{Fore.LIGHTGREEN_EX}Filtered: {len(result)} rows remaining (removed {len(df) - len(result)} rows)")
+    return result
+
+
+def _validate_numeric_filter(text: str) -> bool:
+    """Validate numeric filter expression format."""
+    if not text or not text.strip():
+        return False
+    
+    text = text.strip()
+    
+    # Check for valid operators
+    if text.startswith("<=") or text.startswith(">=") or text.startswith("=="):
+        value_str = text[2:].strip()
+    elif text.startswith("<") or text.startswith(">"):
+        value_str = text[1:].strip()
+    else:
+        return False
+    
+    # Try to convert to float
+    try:
+        float(value_str)
+        return True
+    except ValueError:
+        return False

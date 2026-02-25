@@ -471,6 +471,8 @@ from .plots import (
     joint_grid_plot,
     relation_plot,
     delta_chart_single_column,
+    delta_chart_multiple_columns,
+    delta_chart_winners,
 )
 
 
@@ -490,6 +492,8 @@ def delta_analysis_menu(df: pd.DataFrame) -> None:
             "Delta Analysis - Choose an option:",
             choices=[
                 "Single Column Analysis",
+                "Multiple Column Analysis",
+                "Winners Analysis",
                 "Return to Main Menu"
             ]
         ).ask()
@@ -507,6 +511,10 @@ def delta_analysis_menu(df: pd.DataFrame) -> None:
             break
         elif user == "Single Column Analysis":
             delta_chart_single_column(df)
+        elif user == "Multiple Column Analysis":
+            delta_chart_multiple_columns(df)
+        elif user == "Winners Analysis":
+            delta_chart_winners(df)
         else:
             print(f"{Fore.LIGHTYELLOW_EX}Unknown option '{user}'. Please try again.")
             continue
